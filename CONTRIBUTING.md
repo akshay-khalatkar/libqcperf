@@ -1,7 +1,7 @@
-# Contributing to <REPLACE-ME>
+# Contributing to libqcperf
 
 Hi there!
-We’re thrilled that you’d like to contribute to this project.
+We're thrilled that you'd like to contribute to this project.
 Your help is essential for keeping this project great and for making it better.
 
 ## Branching Strategy
@@ -11,10 +11,10 @@ In general, contributors should develop on branches based off of `main` and pull
 ## Submitting a pull request
 
 1. Please read our [code of conduct](CODE-OF-CONDUCT.md) and [license](LICENSE.txt).
-1. [Fork](https://github.com/qualcomm/<REPLACE-ME>/fork) and clone the repository.
+1. [Fork](https://github.com/qualcomm/libqcperf/fork) and clone the repository.
 
     ```bash
-    git clone https://github.com/<username>/<REPLACE-ME>.git
+    git clone https://github.com/<username>/libqcperf.git
     ```
 
 1. Create a new branch based on `main`:
@@ -26,7 +26,7 @@ In general, contributors should develop on branches based off of `main` and pull
 1. Create an upstream `remote` to make it easier to keep your branches up-to-date:
 
     ```bash
-    git remote add upstream https://github.com/qualcomm/<REPLACE-ME>.git
+    git remote add upstream https://github.com/qualcomm/libqcperf.git
     ```
 
 1. Make your changes, add tests, and make sure the tests still pass.
@@ -50,7 +50,7 @@ In general, contributors should develop on branches based off of `main` and pull
 
     The `-u` is shorthand for `--set-upstream`. This will set up the tracking reference so subsequent runs of `git push` or `git pull` can omit the remote and branch.
 
-1. [Submit a pull request](https://github.com/qualcomm/<REPLACE-ME>/pulls) from your branch to `main`.
+1. [Submit a pull request](https://github.com/qualcomm/libqcperf/pulls) from your branch to `main`.
 1. Pat yourself on the back and wait for your pull request to be reviewed.
 
 ## Security Analysis of Pull Requests
@@ -66,11 +66,38 @@ To maintain the security and integrity of this project, all pull requests from e
 By submitting a PR, you agree to participate in this process and help us keep the project secure for everyone.
 
 
+## Coding Standards
+
+All contributors must follow the project's coding standards to maintain code consistency and quality. For detailed coding guidelines, including:
+
+- Naming conventions (snake_case, PascalCase, UPPER_CASE)
+- Type definitions and typedef usage
+- File organization and structure
+- Documentation requirements (Doxygen)
+- Error handling patterns
+- Memory management best practices
+- Thread safety considerations
+
+Please refer to the **[Coding Guidelines](DEVELOPMENT-GUIDE.md#coding-guidelines)** section in the DEVELOPMENT-GUIDE.md file.
+
+## Development Guidelines
+
 Here are a few things you can do that will increase the likelihood of your pull request to be accepted:
 
-- Follow the existing style where possible. **INSERT LINK TO STYLE, e.g. PEP8 for python**
-- Write tests.
-- Keep your change as focused as possible.
-  If you want to make multiple independent changes, please consider submitting them as separate pull requests.
-- Write a [good commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
-- It's a good idea to arrange a discussion with other developers to ensure there is consensus on large features, architecture changes, and other core code changes. PR reviews will go much faster when there are no surprises.
+- **Follow the coding standards**: Adhere to the [coding guidelines](DEVELOPMENT-GUIDE.md#coding-guidelines) documented in DEVELOPMENT-GUIDE.md.
+- **Format your code**: Always format code using the `.clang-format` configuration before committing.
+- **Write tests**: Add appropriate tests for new features or bug fixes.
+- **Keep changes focused**: If you want to make multiple independent changes, please consider submitting them as separate pull requests.
+- **Write good commit messages**: Follow [these guidelines](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for writing clear commit messages.
+- **Use DCO sign-off**: All commits must include a "Signed-off-by" line (use `git commit -s`).
+- **Discuss major changes**: For large features, architecture changes, or core code modifications, arrange a discussion with other developers first. PR reviews will go much faster when there are no surprises.
+
+## Backend Development
+
+If you're developing a new backend or extending existing backend functionality, please refer to the comprehensive [Backend Development Guide](DEVELOPMENT-GUIDE.md) which includes:
+
+- Project architecture overview
+- Backend interface specifications
+- Step-by-step guide for adding new backends
+- Backend implementation examples
+- Testing guidelines for backends

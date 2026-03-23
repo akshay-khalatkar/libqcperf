@@ -1,47 +1,104 @@
-**After repository creation:**
-- [ ] Update this `README.md`. Update the Project Name, description, and all sections. Remove this checklist.
-- [ ] If required, update `LICENSE.txt` and the License section with your project's approved license
-- [ ] Search this repo for "REPLACE-ME" and update all instances accordingly
-- [ ] Update `CONTRIBUTING.md` as needed
-- [ ] Review the workflows in `.github/workflows`, updating as needed. See https://docs.github.com/en/actions for information on what these files do and how they work.
-- [ ] Review and update the suggested Issue and PR templates as needed in `.github/ISSUE_TEMPLATE` and `.github/PULL_REQUEST_TEMPLATE`
+# libqcperf
 
-# Project Name
+A lightweight, open-source performance profiling library for Qualcomm chipsets.
 
-*\<update with your project name and a short description\>*
+## Table of Contents
+- [Introduction](#introduction)
+- [Framework Features](#framework-features)
+- [Build System](#build-system)
+- [Compilation Instructions](#compilation-instructions)
+- [Design Diagrams](#design-diagrams)
+- [Documentation](#documentation)
 
-Project that does ... implemented in ... runs on Qualcomm® *\<processor\>*
+## Introduction
 
-## Branches
+libqcperf is a performance profiling library designed for Qualcomm chipsets across different SoCs and subsystems. It provides a unified framework for monitoring and analyzing system performance metrics in real-time, enabling developers to optimize their applications for Qualcomm platforms.
 
-**main**: Primary development branch. Contributors should develop submissions based on this branch, and submit pull requests to this branch.
+The library is designed with modularity and extensibility in mind, featuring a core API that interfaces with multiple specialized backends. Each backend focuses on specific performance aspects such as thermal monitoring, memory bandwidth, or power consumption. This architecture allows developers to collect precisely the metrics they need without unnecessary overhead.
 
-## Requirements
+Originally inspired by the Qualcomm Profiler tool, libqcperf is now available as an open-source project, empowering the developer community to build from source, customize functionality, and extend capabilities through new backends or integrations with other tools.
 
-List requirements to run the project, how to install them, instructions to use docker container, etc...
+## Framework Features
 
-## Installation Instructions
+### Core Capabilities
+- Modular backend architecture for different monitoring needs
+- Configurable sampling and streaming rates
+- Dynamic capability discovery
+- Cross-platform support (Windows and Linux)
+- Asynchronous data collection via background threads
+- Non-blocking callback-based data delivery
 
-How to install the software itself.
+### Available Backends
 
-## Usage
+| Backend | Description | Metrics & Configuration Reference |
+|---------|-------------|-----------------------------------|
+| **Thermal Backend** | Monitors temperature and passive cooling metrics across 22 thermal zones | [wos_thermal_info.h](qcperf/backends/wos-thermal/inc/wos_thermal_info.h) |
+| **Power Backend** | Measures power consumption across various system components | [wos_power_backend_info.h](qcperf/backends/wos-power-backend/inc/wos_power_backend_info.h) |
+| **Dummy Backend** | Reference implementation for testing and development | [dummy_info.h](qcperf/backends/dummy/inc/dummy_info.h) |
 
-Describe how to use the project.
+> **Note:** Each backend's info.h file contains detailed information about supported capability, metrics, sampling rates, and streaming rates.
 
-## Development
+### Technical Foundation
+- Relies on publicly available Windows driver APIs (ETW, PEP, IOCTL)
+- Comprehensive error handling and resource management
+- Thread-safe operations for multi-threaded applications
 
-How to develop new features/fixes for the software. Maybe different than "usage". Also provide details on how to contribute via a [CONTRIBUTING.md file](CONTRIBUTING.md).
+## Build System
 
-## Getting in Contact
+- **CMake**
+- **Compiler**
+  - Windows on Snapdragon - Visual Studio 2022
 
-How to contact maintainers. E.g. GitHub Issues, GitHub Discussions could be indicated for many cases. However a mail list or list of Maintainer e-mails could be shared for other types of discussions. E.g.
+## Compilation Instructions
 
-* [Report an Issue on GitHub](../../issues)
-* [Open a Discussion on GitHub](../../discussions)
-* [E-mail us](mailto:REPLACE-ME@qti.qualcomm.com) for general questions
+### Windows ARM64
+
+To build the library for Windows on ARM64 platforms:
+
+```bash
+# Clone the repository
+git clone https://github.com/qualcomm/libqcperf.git
+cd libqcperf
+
+# Clone third-party dependencies
+git submodule update --init --recursive
+
+# Sample test app path
+qcperf\test_app
+
+# Compilation for Windows ARM64
+## Generate build files
+cmake -B <build_dir_path> -G "Visual Studio 17 2022" -A ARM64 -DProjectVersion="0.1.0.0"
+
+## Compile the project
+cmake --build <build_dir_path> --config Release
+```
+
+## Design Diagrams
+
+### Sequence Diagram
+- [QcPerf Sequence Diagram](./assets/libqcperf_sequence.mmd)
+
+### Flow Diagram
+- [QcPerf Flow Diagram](./assets/libqcperf_flow.mmd)
+
+### Backend Architecture
+- [QcPerf Backend Architecture](./assets/libqcperf_backend_architecture.mmd)
+
+## Documentation for backend developers
+
+For detailed information about backend development, coding standards, and extending the library, please refer to the [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) file in the root of the repository.
+
+## Contributing
+
+We welcome contributions to libqcperf! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) file for details on our code of conduct and the process for submitting pull requests.
+
+## Security
+
+For information on reporting security vulnerabilities, please see our [SECURITY.md](SECURITY.md) file.
 
 ## License
 
-*\<update with your project name and license\>*
+This project is licensed under the BSD 3-Clause License. See the [LICENSE.txt](LICENSE.txt) file for full details.
 
-*\<REPLACE-ME\>* is licensed under the [BSD-3-clause License](https://spdx.org/licenses/BSD-3-Clause.html). See [LICENSE.txt](LICENSE.txt) for the full license text.
+Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.

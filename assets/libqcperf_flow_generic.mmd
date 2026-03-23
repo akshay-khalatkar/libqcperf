@@ -1,0 +1,84 @@
+graph TD
+    %% Main flow nodes
+    Start([Start]) --> Init["Initialize QCPerf
+    qcperf_init()"]
+    Init --> Connect["Connect to Backend
+    qcperf_connect_backend()"]
+    Connect --> GetCapabilities["Get Capabilities Info
+    qcperf_get_capabilities_info()"]
+    
+    %% Conditional for verbose mode
+    GetCapabilities --> VerboseCheck{"Verbose Mode
+    Enabled?"}
+    VerboseCheck -->|Yes| DeepCopy["Create Deep Copy of
+    Backend Info"]
+    VerboseCheck -->|No| SetCallback
+    DeepCopy --> SetCallback["Set Data Callback
+    qcperf_set_data_callback()"]
+    
+    %% Profiling operations
+    SetCallback --> StartProfiling["Start Profiling
+    qcperf_start()"]
+    StartProfiling --> ThreadCreation["Create Backend Thread"]
+    ThreadCreation --> DataCollection["Collect Performance Data"]
+    
+    %% Data processing loop
+    DataCollection --> ProcessData["Process & Display
+    Metric Data"]
+    ProcessData --> WaitData["Wait for Data Collection
+    (Sleep)"]
+    WaitData --> StopProfiling["Stop Profiling
+    qcperf_stop()"]
+    
+    %% Cleanup operations
+    StopProfiling --> Disconnect["Disconnect Backend
+    qcperf_disconnect_backend()"]
+    Disconnect --> Deinit["Deinitialize QCPerf
+    qcperf_deinit()"]
+    Deinit --> CleanupResources["Clean Up Resources"]
+    CleanupResources --> End([End])
+    
+    %% Subgraphs
+    subgraph ThreadOps[Backend Thread Operations]
+        ThreadCreation
+        DataCollection
+    end
+    
+    subgraph DataProc[Data Processing]
+        ProcessData
+    end
+    
+    subgraph Cleanup[Resource Cleanup]
+        CleanupResources
+    end
+    
+    %% Enhanced styling for better readability
+    %% Process nodes - Light blue with dark border
+    style Init fill:#d4f1f9,stroke:#05445E,stroke-width:1px,color:#05445E,font-weight:bold
+    style Connect fill:#d4f1f9,stroke:#05445E,stroke-width:1px,color:#05445E,font-weight:bold
+    style GetCapabilities fill:#d4f1f9,stroke:#05445E,stroke-width:1px,color:#05445E,font-weight:bold
+    style DeepCopy fill:#d4f1f9,stroke:#05445E,stroke-width:1px,color:#05445E,font-weight:bold
+    style SetCallback fill:#d4f1f9,stroke:#05445E,stroke-width:1px,color:#05445E,font-weight:bold
+    
+    %% Profiling operations - Light green with dark border
+    style StartProfiling fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style ThreadCreation fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style DataCollection fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style ProcessData fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style WaitData fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style StopProfiling fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    
+    %% Cleanup operations - Light purple with dark border
+    style Disconnect fill:#e1bee7,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold
+    style Deinit fill:#e1bee7,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold
+    style CleanupResources fill:#e1bee7,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold
+    
+    %% Special nodes
+    style Start fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:white,font-weight:bold
+    style End fill:#F44336,stroke:#B71C1C,stroke-width:2px,color:white,font-weight:bold
+    style VerboseCheck fill:#ffb74d,stroke:#e65100,stroke-width:1px,color:#e65100,font-weight:bold
+    
+    %% Subgraph styling
+    style ThreadOps fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style DataProc fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    style Cleanup fill:#f3e5f5,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold

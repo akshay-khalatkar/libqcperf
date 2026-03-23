@@ -1,0 +1,98 @@
+sequenceDiagram
+    participant CoreTest
+    participant Core
+    participant Backend
+    participant BackendThread
+    participant Driver
+
+    Note over CoreTest,Core: CoreTest is a test application that uses the Core API to perform profiling.
+    Note over Backend,BackendThread: The backend thread is created in qcperf_backend_start() and destroyed in qcperf_backend_stop().
+
+    %% Step 1: Initialize QCPerf
+    CoreTest->>Core: qcperf_init()
+    Core->>Core: Allocate QcPerfBackendPrivate* array
+    Core->>Core: Initialize OS dependencies if any
+    Core-->>CoreTest: Return initialization status
+
+    %% Step 2: Connect to backend
+    CoreTest->>Core: qcperf_connect_backend(enum QcPerfBackendId, QcPerfMessageCallback)
+    Core->>Backend: backend_create(QcPerfBackendPrivate*)
+    Backend->>Core: Fill function pointers map with backend implementations
+    Core->>Backend: Set message callback if provided by user
+    Backend-->>Core: Set message callback response
+    Core->>Backend: Initialize backend
+    Backend->>Driver: Send initialization command
+    Driver-->>Backend: Initialization response
+    Backend->>Backend: Fill capability map data
+    Backend-->>Core: Return response code
+    Core-->>CoreTest: Return response code
+
+    %% Step 3: Get capabilities info
+    CoreTest->>Core: qcperf_get_capabilities_info(enum QcPerfBackendId, struct QcPerfBackendInfo*)
+    Core->>Backend: qcperf_backend_info(struct QcPerfBackendInfo*)
+    Backend-->>Core: Response with capability data
+    Core-->>CoreTest: Return capability data
+
+    %% Step 4: Create deep copy of backend info (if verbose mode enabled)
+    alt Verbose Mode Enabled
+        CoreTest->>CoreTest: create_backend_info_copy(backend_info)
+        Note over CoreTest: Deep copy capability and metric information for verbose printing
+    end
+
+    %% Step 5: Set data callback
+    CoreTest->>Core: qcperf_set_data_callback(enum QcPerfBackendId, QcPerfDataCallback)
+    Core->>Backend: set_data_callback(QcPerfDataCallback)
+    Backend-->>Core: Return response code
+    Core-->>CoreTest: Return response code
+
+    %% Step 6: Test capability
+        %% Step 6.1: Start profiling
+        CoreTest->>Core: qcperf_start(enum QcPerfBackendId, struct QcPerfRequest*)
+        Core->>Backend: qcperf_backend_start(struct QcPerfRequest*)
+        Backend->>BackendThread: Create thread for receiving data from driver
+        Backend->>Driver: Send start command to driver
+        
+        %% Step 6.2: Data collection
+        loop Thread Execution
+            Note over Backend,BackendThread: Background thread created by the backend
+            BackendThread->>Driver: Request data as per request parameters
+            Driver-->>BackendThread: Send data back to consumer thread
+            BackendThread->>CoreTest: Send data to result callback function
+            CoreTest->>CoreTest: Process and display metric data
+        end
+        
+        Driver-->>Backend: Start response
+        Backend-->>Core: Return response code
+        Core-->>CoreTest: Return response code
+        
+        %% Step 6.3: Wait for data collection
+        CoreTest->>CoreTest: Wait for data collection (sleep)
+        
+        %% Step 6.4: Stop profiling
+        CoreTest->>Core: qcperf_stop(enum QcPerfBackendId, struct QcPerfRequest*)
+        Core->>Backend: qcperf_backend_stop(struct QcPerfRequest*)
+        Backend->>Driver: Send stop command to driver
+        Backend->>BackendThread: Signal thread to terminate
+        Driver-->>Backend: Stop response
+        Backend-->>Core: Return response code
+        Core-->>CoreTest: Return response code
+
+    %% Step 7: Disconnect backend
+    CoreTest->>Core: qcperf_disconnect_backend(enum QcPerfBackendId)
+    Core->>Backend: qcperf_backend_deinit()
+    Backend->>Driver: Send deinit command to driver
+    Driver-->>Backend: Deinit response
+    Backend->>Backend: Free all allocated memory
+    Backend-->>Core: Return response code
+    Core->>Core: Cleanup backend registered data
+    Core-->>CoreTest: Return response code
+
+    %% Step 8: Deinitialize QCPerf
+    CoreTest->>Core: qcperf_deinit()
+    Core->>Core: Cleanup core data structures
+    Core-->>CoreTest: Return response code
+
+    %% Step 9: Clean up resources
+    CoreTest->>CoreTest: Free request memory
+    CoreTest->>CoreTest: Free backend info memory
+    CoreTest->>CoreTest: Call cleanup_backend_info()

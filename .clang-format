@@ -1,0 +1,28 @@
+Language: Cpp
+BasedOnStyle: Google
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+MaxEmptyLinesToKeep: 1
+ColumnLimit: 200
+PenaltyBreakAssignment: 2
+PenaltyReturnTypeOnItsOwnLine: 400
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+IndentCaseLabels: false
+SortIncludes: false
+AlignConsecutiveAssignments: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterObjCDeclaration: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
+AlignTrailingComments: true
