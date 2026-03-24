@@ -1,5 +1,3 @@
 [submodule "qcperf/third-party/krabs"]
 	path = qcperf/third-party/krabs
 	url = https://github.com/microsoft/krabsetw.git
-	update = checkout
-	branch = eaa17e2f9204496af81e3ca207450fdc7c6956f7
