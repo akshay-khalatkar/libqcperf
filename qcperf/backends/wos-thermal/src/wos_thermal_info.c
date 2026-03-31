@@ -1185,9 +1185,44 @@ void wos_thermal_capability_init_available_metrics(struct QcPerfMetricInfo* metr
                         found_match = true;
                     }
 
-                    // If no match was found, use generic naming
+                    // Handle unrecognized zones based on compile-time target version flag.
+                    // QCPERF_TARGET_V2 : named zones only — flag unrecognized zones as errors.
+                    // QCPERF_TARGET_V1 : all zones are raw BIOS names — always create generic metrics.
+                    // AUTO (no flag)   : runtime detection — try named match first, fall back to generic.
                     if (!found_match) {
+#if defined(QCPERF_TARGET_V2)
+                        // V2 target: every zone is expected to have a named metric definition
                         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "Metric not defined for zone : %s", zone_name);
+#else
+                        // V1 target or AUTO: create generic metrics for unrecognized zones
+                        if (metric_index + 1 >= WOS_THERMAL_CAPABILITY_METRIC_COUNT) {
+                            SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_WARNING, "Maximum metric count reached, skipping zone : %s", zone_name);
+                        } else {
+                            SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_DEBUG, "No named metric for zone : %s (zone_id=%u), creating generic metrics", zone_name, zone_id);
+
+                            // Generic temperature metric
+                            metrics_data[metric_index].metric_id = metric_index;
+                            snprintf(metrics_data[metric_index].metric_name, METRIC_NAME_MAX_LEN, "Zone id : %u %s Temperature", zone_id, zone_name);
+                            metrics_data[metric_index].metric_name_len = strlen(metrics_data[metric_index].metric_name);
+                            snprintf(metrics_data[metric_index].metric_description, MAX_METRIC_DESCRIPTION_LEN, "Temperature of thermal zone %u (%s)", zone_id, zone_name);
+                            metrics_data[metric_index].metric_description_len = strlen(metrics_data[metric_index].metric_description);
+                            snprintf(metrics_data[metric_index].metric_unit, MAX_METRIC_UNIT_LEN, "%s", "deg C");
+                            metrics_data[metric_index].metric_unit_len = strlen(metrics_data[metric_index].metric_unit);
+                            g_zone_id_to_metric_index_map[zone_id][0] = metric_index;
+                            metric_index++;
+
+                            // Generic passive cooling metric
+                            metrics_data[metric_index].metric_id = metric_index;
+                            snprintf(metrics_data[metric_index].metric_name, METRIC_NAME_MAX_LEN, "Zone id : %u %s Passive Cooling", zone_id, zone_name);
+                            metrics_data[metric_index].metric_name_len = strlen(metrics_data[metric_index].metric_name);
+                            snprintf(metrics_data[metric_index].metric_description, MAX_METRIC_DESCRIPTION_LEN, "Passive Cooling of thermal zone %u (%s)", zone_id, zone_name);
+                            metrics_data[metric_index].metric_description_len = strlen(metrics_data[metric_index].metric_description);
+                            snprintf(metrics_data[metric_index].metric_unit, MAX_METRIC_UNIT_LEN, "%s", "%");
+                            metrics_data[metric_index].metric_unit_len = strlen(metrics_data[metric_index].metric_unit);
+                            g_zone_id_to_metric_index_map[zone_id][1] = metric_index;
+                            metric_index++;
+                        }
+#endif
                     }
                 }
             }

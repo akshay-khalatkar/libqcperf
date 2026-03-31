@@ -53,7 +53,11 @@
 #define WOS_THERMAL_SAMPLING_RATES 50, 100
 
 #define WOS_THERMAL_CAPABILITY "thermal"
-#define WOS_THERMAL_CAPABILITY_METRIC_COUNT 44  // 22 thermal zones * 2 metrics (temperature and passive cooling)
+#if defined(QCPERF_TARGET_V2)
+#define WOS_THERMAL_CAPABILITY_METRIC_COUNT 44   // V2: 22 named zones * 2 metrics (temperature and passive cooling)
+#else
+#define WOS_THERMAL_CAPABILITY_METRIC_COUNT 128  // V1/AUTO: up to 64 zones * 2 metrics (temperature and passive cooling)
+#endif
 
 /**
  * @enum WosThermalMetricIndex

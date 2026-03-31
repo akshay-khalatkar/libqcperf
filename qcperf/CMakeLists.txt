@@ -36,6 +36,27 @@ include(cmake/BuildConfig.cmake)
 
 
 # ============================================================================
+# Target Hardware Version
+# ============================================================================
+# Specify the hardware target version to select the appropriate thermal zone
+# handling strategy at compile time:
+#   V1  - Generic zone support (zones reported as raw BIOS names e.g. \_SB.TZxx)
+#   V2  - Named zone support  (zones reported with descriptive names)
+#   AUTO - Runtime detection: tries named match first, falls back to generic (default)
+set(QCPERF_TARGET_VERSION "AUTO" CACHE STRING "Target hardware version (V1, V2, AUTO)")
+set_property(CACHE QCPERF_TARGET_VERSION PROPERTY STRINGS V1 V2 AUTO)
+
+if(QCPERF_TARGET_VERSION STREQUAL "V1")
+    add_compile_definitions(QCPERF_TARGET_V1)
+    message(STATUS "Target version: V1 (generic thermal zone support)")
+elseif(QCPERF_TARGET_VERSION STREQUAL "V2")
+    add_compile_definitions(QCPERF_TARGET_V2)
+    message(STATUS "Target version: V2 (named thermal zone support)")
+else()
+    message(STATUS "Target version: AUTO (runtime detection, supports V1 and V2)")
+endif()
+
+# ============================================================================
 # Component subdirectories
 # ============================================================================
 # Add each component in dependency order:
@@ -61,4 +82,5 @@ message(STATUS "  CXX Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "  System: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "  Processor: ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "  Target version: ${QCPERF_TARGET_VERSION}")
 message(STATUS "")
