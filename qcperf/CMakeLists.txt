@@ -34,15 +34,19 @@ project(QcPerf
 # This centralizes platform detection, compiler flags, and other build settings
 include(cmake/BuildConfig.cmake)
 
+# Enable testing
+enable_testing()
 
 # ============================================================================
 # Component subdirectories
 # ============================================================================
 # Add each component in dependency order:
+# - third-party: Third-party libraries (Unity testing framework)
 # - core: Main library functionality
 # - backends: Performance monitoring backend implementations
 # - utils: Utility libraries used by core and backends
-# - core-test: Test application for the core library
+# - test-app: Test application for the core library
+add_subdirectory(third-party)
 add_subdirectory(core)
 add_subdirectory(backends)
 add_subdirectory(utils)
