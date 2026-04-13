@@ -144,7 +144,7 @@ enum IoctlCommonReturnCode ioctl_get_device_handle(GUID guid, HANDLE* device_han
                 return_code = ioctl_get_device_symbolic_link(symbolic_link_request);
 
                 if (RETURN_CODE_IOCTL_COMMON_SUCCESS == return_code) {
-                    *device_handle = CreateFile((LPCSTR)symbolic_link_request->symbolic_link, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                    *device_handle = CreateFile((LPCSTR)symbolic_link_request->symbolic_link, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
                     error_number   = GetLastError();
                     if (*device_handle == INVALID_HANDLE_VALUE) {
                         return_code = RETURN_CODE_IOCTL_COMMON_CREATE_FILE_FAILED;

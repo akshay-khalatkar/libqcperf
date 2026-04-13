@@ -73,6 +73,16 @@ static const char* g_counter_instances[MAX_POWER_TELEMETRY_RAILS] = {
 };
 static struct RailsSupported* g_rails_supported = NULL;
 
+#ifdef QCPERF_TARGET_V1
+#include "qcpep_power_ioctl.h"
+static HANDLE   g_pep_device_handle                            = NULL;
+static uint16_t g_v1_rail_count                                = 0;
+static uint8_t  g_v1_rail_index_map[MAX_POWER_TELEMETRY_RAILS] = {0};
+static uint64_t g_v1_prev_energy[MAX_POWER_TELEMETRY_RAILS]    = {0};
+static uint64_t g_v1_prev_timestamp                            = 0;
+static uint32_t g_v1_rails_bitmap                              = 0;
+#endif
+
 /**
  * @brief Get the supported power rails.
  *
@@ -89,11 +99,117 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetSupported(struct RailsSupp
     char* available_counters_list              = NULL;
     uint32_t available_counters_list_length    = 0;
     char* available_counters_list_iterator     = NULL;
+#ifdef QCPERF_TARGET_V1
+    enum IoctlCommonReturnCode ioctl_rc              = RETURN_CODE_IOCTL_COMMON_SUCCESS;
+    uint32_t caps_size                               = 0;
+    DWORD bytes_returned                             = 0;
+    BOOL ok                                          = FALSE;
+    uint8_t* caps_buf                                = NULL;
+    const struct QcPepCapabilities* caps              = NULL;
+    const uint8_t* entry                             = NULL;
+    const uint8_t* end                               = NULL;
+    uint16_t ri                                      = 0;
+    uint16_t name_bytes                              = 0;
+    const WCHAR* wname                               = NULL;
+    char narrow[64]                                  = {0};
+    int wlen                                         = 0;
+#endif
 
     if (NULL != g_rails_supported) {
         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_WARNING, "%s", "Available metrics have already been initialized, reusing");
         return_code = RETURN_CODE_POWER_TELEMETRY_SUCCESS;
     } else {
+#ifdef QCPERF_TARGET_V1
+        g_rails_supported = (struct RailsSupported*)calloc(1, sizeof(struct RailsSupported));
+        if (NULL == g_rails_supported) {
+            return_code = RETURN_CODE_POWER_TELEMETRY_CALLOC_FAILED;
+        } else {
+            ioctl_rc = ioctl_get_device_handle(GUID_QCPEP_POWER_DEVICE_INTERFACE, &g_pep_device_handle);
+            if (RETURN_CODE_IOCTL_COMMON_SUCCESS != ioctl_rc) {
+                SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR,
+                    "ioctl_get_device_handle failed rc=%d GLE=%lu", (int)ioctl_rc, GetLastError());
+                return_code = RETURN_CODE_POWER_TELEMETRY_IOCTL_HANDLE_COMMON_FAILED;
+            } else {
+                ok = DeviceIoControl(g_pep_device_handle,
+                                     IOCTL_QCPEP_GET_CAPS_SIZE,
+                                     NULL, 0,
+                                     &caps_size, (DWORD)sizeof(caps_size),
+                                     &bytes_returned, NULL);
+                if (FALSE == ok || bytes_returned < (DWORD)sizeof(caps_size)) {
+                    SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR,
+                        "IOCTL_QCPEP_GET_CAPS_SIZE failed GLE=%lu", GetLastError());
+                    return_code = RETURN_CODE_POWER_TELEMETRY_IOCTL_HANDLE_COMMON_FAILED;
+                } else if (caps_size > QCPEP_CAPS_BUFFER_MAX) {
+                    SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR,
+                        "caps_size=%u exceeds QCPEP_CAPS_BUFFER_MAX", caps_size);
+                    return_code = RETURN_CODE_POWER_TELEMETRY_IOCTL_HANDLE_COMMON_FAILED;
+                } else {
+                    caps_buf = (uint8_t*)calloc(caps_size, 1);
+                    if (NULL == caps_buf) {
+                        return_code = RETURN_CODE_POWER_TELEMETRY_CALLOC_FAILED;
+                    } else {
+                        ok = DeviceIoControl(g_pep_device_handle,
+                                             IOCTL_QCPEP_GET_CAPABILITIES,
+                                             NULL, 0,
+                                             caps_buf, caps_size,
+                                             &bytes_returned, NULL);
+                        if (FALSE == ok || bytes_returned < (DWORD)sizeof(struct QcPepCapabilities)) {
+                            SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR,
+                                "IOCTL_QCPEP_GET_CAPABILITIES failed GLE=%lu", GetLastError());
+                            return_code = RETURN_CODE_POWER_TELEMETRY_IOCTL_HANDLE_COMMON_FAILED;
+                        } else {
+                            caps = (const struct QcPepCapabilities*)caps_buf;
+                            g_v1_rail_count = caps->numRails;
+                            memset(g_v1_rail_index_map, QCPEP_RAIL_INDEX_UNMATCHED, sizeof(g_v1_rail_index_map));
+                            entry = caps_buf + sizeof(struct QcPepCapabilities);
+                            end   = caps_buf + bytes_returned;
+                            ri    = 0;
+                            while (ri < caps->numRails && entry + 2 <= end) {
+                                name_bytes = *(const uint16_t*)entry;
+                                if (name_bytes < 2u) {
+                                    entry += 2;
+                                    continue;
+                                }
+                                wname = (const WCHAR*)(entry + 2);
+                                entry += 2u + name_bytes;
+                                if (entry > end) {
+                                    break;
+                                }
+                                // Convert UTF-16LE rail name to narrow string
+                                memset(narrow, 0, sizeof(narrow));
+                                wlen = (int)(name_bytes / 2u) - 1;  // exclude null terminator
+                                if (wlen <= 0 || wlen >= (int)sizeof(narrow)) {
+                                    ri++;
+                                    continue;
+                                }
+                                for (int c = 0; c < wlen; c++) {
+                                    narrow[c] = (char)(wname[c] & 0x7F);
+                                }
+                                for (uint8_t ei = 0; ei < MAX_POWER_TELEMETRY_RAILS; ei++) {
+                                    if (0 == strcmp(narrow, g_counter_instances[ei])) {
+                                        g_v1_rail_index_map[ri] = ei;
+                                        g_rails_supported->supportedRailsMap[ei] = true;
+                                        SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_INFO,
+                                            "V1 rail[%u] '%s' -> ePowerTelemetryRail %u",
+                                            (unsigned)ri, narrow, (unsigned)ei);
+                                        return_code = RETURN_CODE_POWER_TELEMETRY_SUCCESS;
+                                        break;
+                                    }
+                                }
+                                if (QCPEP_RAIL_INDEX_UNMATCHED == g_v1_rail_index_map[ri]) {
+                                    SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_WARNING,
+                                        "V1 rail[%u] '%s' has no matching ePowerTelemetryRail",
+                                        (unsigned)ri, narrow);
+                                }
+                                ri++;
+                            }
+                        }
+                        free(caps_buf);
+                    }
+                }
+            }
+        }
+#else
         g_rails_supported = (struct RailsSupported*)calloc(1, sizeof(struct RailsSupported));
         if (NULL == g_rails_supported) {
             SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "%s", "Memory allocation failed for available metrics");
@@ -142,6 +258,7 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetSupported(struct RailsSupp
                 }
             }
         }
+#endif
     }
 
     if (RETURN_CODE_POWER_TELEMETRY_SUCCESS == return_code && g_rails_supported != rails_supported) {
@@ -185,6 +302,26 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsInit(struct RailsInfoRequest*
         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "%s", "Input is NULL or empty");
         status = RETURN_CODE_POWER_TELEMETRY_NULL_POINTER;
     } else {
+#ifdef QCPERF_TARGET_V1
+        g_rails_initialized = true;
+        status              = powerTelemetry_railsGetSupported(NULL, true);
+        if (RETURN_CODE_POWER_TELEMETRY_SUCCESS == status) {
+            g_v1_rails_bitmap   = 0;
+            g_v1_prev_timestamp = 0;
+            memset(g_v1_prev_energy, 0, sizeof(g_v1_prev_energy));
+            for (uint8_t i = 0; i < request->railsLength; i++) {
+                uint8_t rail = request->rails[i];
+                if (rail < MAX_POWER_TELEMETRY_RAILS &&
+                    g_rails_supported->supportedRailsMap[rail]) {
+                    g_v1_rails_bitmap |= (1u << rail);
+                }
+            }
+        }
+        if (status != RETURN_CODE_POWER_TELEMETRY_SUCCESS) {
+            powerTelemetry_railsDestroy();
+            g_rails_initialized = false;
+        }
+#else
         g_rails_initialized = true;
         status              = powerTelemetry_railsGetSupported(NULL, true);
         if (RETURN_CODE_POWER_TELEMETRY_SUCCESS == status) {
@@ -226,6 +363,7 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsInit(struct RailsInfoRequest*
             powerTelemetry_railsDestroy();
             g_rails_initialized = false;
         }
+#endif
     }
 
     return status;
@@ -242,6 +380,15 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetInfo(struct RailsInfoRespo
     enum ePowerTelemetryReturnCode status = RETURN_CODE_POWER_TELEMETRY_SUCCESS;
     uint8_t request_iterator              = 0;
     enum ePowerTelemetryRail current_rail = POWER_TELEMETRY_RAIL_CPU_CLUSTER_0;
+#ifdef QCPERF_TARGET_V1
+    struct QcPepRailMeasurement meas[MAX_POWER_TELEMETRY_RAILS] = {{0}};
+    DWORD bytes_returned                                        = 0;
+    BOOL ok                                                     = FALSE;
+    uint64_t delta_time                                         = 0;
+    uint8_t rail_enum                                           = QCPEP_RAIL_INDEX_UNMATCHED;
+    uint64_t delta_energy                                       = 0;
+    uint16_t i                                                  = 0;
+#endif
 
     if (false == g_rails_initialized) {
         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "%s", "Rails library is not yet initialized");
@@ -249,6 +396,62 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetInfo(struct RailsInfoRespo
     } else if (NULL == response) {
         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "%s", "Input is null");
         status = RETURN_CODE_POWER_TELEMETRY_NULL_POINTER;
+#ifdef QCPERF_TARGET_V1
+    } else {
+        ok = DeviceIoControl(g_pep_device_handle,
+                             IOCTL_QCPEP_GET_MEASUREMENTS,
+                             NULL, 0,
+                             meas, (DWORD)(sizeof(struct QcPepRailMeasurement) * g_v1_rail_count),
+                             &bytes_returned, NULL);
+        if (FALSE == ok) {
+            SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR,
+                "IOCTL_QCPEP_GET_MEASUREMENTS failed GLE=%lu", GetLastError());
+            status = RETURN_CODE_POWER_TELEMETRY_IOCTL_HANDLE_COMMON_FAILED;
+        } else if (0 == g_v1_prev_timestamp) {
+            for (i = 0; i < g_v1_rail_count; i++) {
+                g_v1_prev_energy[i] = meas[i].energy100nJ;
+            }
+            g_v1_prev_timestamp            = meas[0].filetimeTick;
+            response->railsAndValuesLength = 0;
+            status = RETURN_CODE_POWER_TELEMETRY_WARNING_INVALID_DATA;
+        } else {
+            delta_time = meas[0].filetimeTick - g_v1_prev_timestamp;
+            if (0 == delta_time) {
+                response->railsAndValuesLength = 0;
+                status = RETURN_CODE_POWER_TELEMETRY_WARNING_INVALID_DATA;
+            } else {
+                // power_W = delta_energy_100nJ / delta_time_100ns (units cancel to Watts)
+                response->railsAndValuesLength = 0;
+                for (i = 0; i < g_v1_rail_count; i++) {
+                    rail_enum = g_v1_rail_index_map[i];
+                    if (QCPEP_RAIL_INDEX_UNMATCHED == rail_enum) {
+                        continue;
+                    }
+                    if (0 == (g_v1_rails_bitmap & (1u << rail_enum))) {
+                        continue;
+                    }
+                    delta_energy = meas[i].energy100nJ - g_v1_prev_energy[i];
+                    response->rails[response->railsAndValuesLength]  = rail_enum;
+                    response->values[response->railsAndValuesLength] = (double)delta_energy / (double)delta_time;
+                    SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_DEBUG,
+                        "V1 rail[%u] ePowerTelemetryRail=%u power=%.3fW",
+                        (unsigned)i, (unsigned)rail_enum,
+                        response->values[response->railsAndValuesLength]);
+                    response->railsAndValuesLength++;
+                }
+                for (i = 0; i < g_v1_rail_count; i++) {
+                    g_v1_prev_energy[i] = meas[i].energy100nJ;
+                }
+                g_v1_prev_timestamp = meas[0].filetimeTick;
+                if (response->railsAndValuesLength > 0) {
+                    status = RETURN_CODE_POWER_TELEMETRY_SUCCESS;
+                } else {
+                    status = RETURN_CODE_POWER_TELEMETRY_WARNING_INVALID_DATA;
+                }
+            }
+        }
+    }
+#else
     } else if (NULL == g_rail_counters_requested || 0 == g_rail_counters_requested_length) {
         SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "%s", "Request is empty");
         status = RETURN_CODE_POWER_TELEMETRY_INVALID_INPUT;
@@ -286,6 +489,7 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetInfo(struct RailsInfoRespo
             }
         }
     }
+#endif
     return status;
 }
 
@@ -297,6 +501,22 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsGetInfo(struct RailsInfoRespo
 enum ePowerTelemetryReturnCode powerTelemetry_railsDestroy() {
     enum ePowerTelemetryReturnCode status = RETURN_CODE_POWER_TELEMETRY_SUCCESS;
     if (true == g_rails_initialized) {
+#ifdef QCPERF_TARGET_V1
+        if (NULL != g_pep_device_handle) {
+            ioctl_free_device_handle(&g_pep_device_handle);
+            g_pep_device_handle = NULL;
+        }
+        g_v1_rail_count     = 0;
+        g_v1_rails_bitmap   = 0;
+        g_v1_prev_timestamp = 0;
+        memset(g_v1_rail_index_map, QCPEP_RAIL_INDEX_UNMATCHED, sizeof(g_v1_rail_index_map));
+        memset(g_v1_prev_energy, 0, sizeof(g_v1_prev_energy));
+        g_rails_initialized = false;
+        if (NULL != g_rails_supported) {
+            free(g_rails_supported);
+            g_rails_supported = NULL;
+        }
+#else
         if (NULL != g_h_query) {
             // Closes all counters contained in the specified query,
             // closes all handles related to the query, and frees all memory associated with the query.
@@ -320,6 +540,7 @@ enum ePowerTelemetryReturnCode powerTelemetry_railsDestroy() {
             g_rails_supported = NULL;
         }
         g_rails_initialized = false;
+#endif
     }
     return status;
 }
