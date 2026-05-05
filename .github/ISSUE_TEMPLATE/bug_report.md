@@ -28,7 +28,7 @@ A clear and concise description of what actually happened.
 - Arch : [e.g., ARM, ARM64, X64]
 - Compiler: [e.g., Visual Studio 2022, GCC 11.2]
 - libqcperf Version: [e.g., 0.1.0]
-- Backend: [e.g., Thermal, Power, DDR, Dummy]
+- Backend: [e.g., Thermal, Power, Dummy]
 - Hardware: [e.g., Snapdragon 8cx Gen 3]
 
 ## Logs/Error Messages

@@ -696,7 +696,6 @@ This section outlines the coding standards and best practices for the libqcperf 
   enum QcPerfBackendId {
       QC_PERF_BACKEND_DUMMY = 0,
       QC_PERF_BACKEND_POWER,
-      QC_PERF_BACKEND_DDR,
       QC_PERF_BACKEND_THERMAL,
       QC_PERF_BACKEND_MAX,
   };
