@@ -57,7 +57,7 @@ Originally inspired by the Qualcomm Profiler tool, libqcperf is now available as
 >
 
 ### Technical Foundation
-- WoS backends rely on publicly available Windows driver APIs (ETW, PEP, IOCTL)
+- WoS backends rely on publicly available Windows driver APIs (ETW, IOCTL)
 - Linux backends rely on standard Linux kernel interfaces (sysfs, procfs)
 - Comprehensive error handling and resource management
 - Thread-safe operations for multi-threaded applications

@@ -20,7 +20,6 @@ target_include_directories(QcPerfWosThermalBackend PUBLIC
     ${CMAKE_SOURCE_DIR}/core/inc/internal # Internal QcPerf includes
     ${CMAKE_SOURCE_DIR}/backends/inc # Backend common includes
     ${CMAKE_SOURCE_DIR}/backends/utils/wos/ioctl/inc # Windows IOCTL utilities
-    ${CMAKE_SOURCE_DIR}/backends/utils/wos/pep/inc # Windows PEP utilities
     ${CMAKE_SOURCE_DIR}/utils/qthread/inc # Thread utilities
     ${CMAKE_SOURCE_DIR}/utils/qtime/inc # Time utilities
 )
