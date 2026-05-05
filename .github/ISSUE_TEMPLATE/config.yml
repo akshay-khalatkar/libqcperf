@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/qualcomm/libqcperf/discussions
+    about: Ask questions or discuss ideas with the community
+  - name: Security Vulnerability
+    url: https://github.com/qualcomm/libqcperf/security/advisories/new
+    about: Report a security vulnerability privately
+  - name: Documentation
+    url: https://github.com/qualcomm/libqcperf/blob/main/README.md
+    about: View project documentation and guides

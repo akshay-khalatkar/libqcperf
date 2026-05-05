@@ -1,0 +1,92 @@
+graph TD
+    %% Core components
+    Core["QcPerf Core Library"]
+    API["Public API
+    qcperf_init()
+    qcperf_connect_backend()
+    qcperf_start()
+    qcperf_stop()"]
+    Interface["Backend Interface
+    QcPerfBackendPrivate"]
+    
+    %% Backend implementations
+    Dummy["Dummy Backend
+    (Testing/Reference)"]
+    Thermal["WOS Thermal Backend
+    (Temperature Monitoring)"]
+    DDR["WOS BW DDR Backend
+    (Memory Bandwidth)"]
+    Power["WOS Power Backend
+    (Power Consumption)"]
+    
+    %% Utility libraries
+    Utils["Utility Libraries"]
+    QThread["QThread
+    (Thread Management)"]
+    QMutex["QMutex
+    (Synchronization)"]
+    QCv["QCv
+    (Condition Variables)"]
+    QList["QList
+    (Data Structures)"]
+    
+    %% Backend capabilities
+    ThermalCap["Thermal Capabilities
+    - CPU Clusters Temperature
+    - GPU Temperature
+    - Passive Cooling States"]
+    
+    DDRCap["DDR Capabilities
+    - Bandwidth Usage
+    - Bandwidth Utilization
+    - Clock Frequencies"]
+    
+    PowerCap["Power Capabilities
+    - CPU Power
+    - GPU Power
+    - System Power"]
+    
+    DummyCap["Dummy Capabilities
+    - Synthetic Metrics"]
+    
+    %% Connections
+    API --> Core
+    Core --> Interface
+    Interface --> Dummy
+    Interface --> Thermal
+    Interface --> DDR
+    Interface --> Power
+    
+    Dummy --> DummyCap
+    Thermal --> ThermalCap
+    DDR --> DDRCap
+    Power --> PowerCap
+    
+    Dummy --> Utils
+    Thermal --> Utils
+    DDR --> Utils
+    Power --> Utils
+    
+    Utils --> QThread
+    Utils --> QMutex
+    Utils --> QCv
+    Utils --> QList
+    
+    %% Styling
+    classDef core fill:#d4f1f9,stroke:#05445E,stroke-width:2px,color:#05445E,font-weight:bold
+    classDef interface fill:#bbdefb,stroke:#1565c0,stroke-width:2px,color:#1565c0,font-weight:bold
+    classDef dummy fill:#e3f2fd,stroke:#1565c0,stroke-width:1px,color:#1565c0,font-weight:bold
+    classDef thermal fill:#ffcdd2,stroke:#b71c1c,stroke-width:1px,color:#b71c1c,font-weight:bold
+    classDef ddr fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
+    classDef power fill:#e1bee7,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold
+    classDef utils fill:#fff9c4,stroke:#f57f17,stroke-width:1px,color:#f57f17,font-weight:bold
+    classDef caps fill:#f5f5f5,stroke:#616161,stroke-width:1px,color:#616161,font-weight:bold
+    
+    class Core,API core
+    class Interface interface
+    class Dummy dummy
+    class Thermal thermal
+    class DDR ddr
+    class Power power
+    class Utils,QThread,QMutex,QCv,QList utils
+    class ThermalCap,DDRCap,PowerCap,DummyCap caps
