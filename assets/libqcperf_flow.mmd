@@ -9,15 +9,12 @@ graph TD
     qcperf_connect_backend(QC_PERF_BACKEND_DUMMY)"]
     BackendSelect -->|Thermal| ConnectThermal["Connect to WOS Thermal Backend
     qcperf_connect_backend(QC_PERF_BACKEND_THERMAL)"]
-    BackendSelect -->|DDR| ConnectDDR["Connect to WOS BW DDR Backend
-    qcperf_connect_backend(QC_PERF_BACKEND_DDR)"]
     BackendSelect -->|Power| ConnectPower["Connect to WOS Power Backend
     qcperf_connect_backend(QC_PERF_BACKEND_POWER)"]
     
     %% Merge backend connections
     ConnectDummy --> GetCapabilities
     ConnectThermal --> GetCapabilities
-    ConnectDDR --> GetCapabilities
     ConnectPower --> GetCapabilities
     
     GetCapabilities["Get Capabilities Info

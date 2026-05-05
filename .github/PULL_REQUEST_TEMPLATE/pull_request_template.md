@@ -34,7 +34,7 @@ Fixes #(issue number)
 - Arch: [e.g., ARM64, X64]
 - Compiler: [e.g., Visual Studio 2022, GCC 11.2]
 - Hardware: [e.g., Snapdragon 8cx Gen 3]
-- Backend(s) tested: [e.g., Thermal, Power, DDR]
+- Backend(s) tested: [e.g., Thermal, Power]
 
 ### Test Results
 <!-- Describe the test results -->

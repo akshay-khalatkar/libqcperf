@@ -37,7 +37,7 @@ Describe your specific use case for this feature:
 ## Target Environment
 - OS: [e.g., Windows 11, Linux]
 - Arch: [e.g., ARM, ARM64, X64]
-- Backend: [e.g., Thermal, Power, DDR, Dummy, or New Backend]
+- Backend: [e.g., Thermal, Power, Dummy, or New Backend]
 - Hardware: [e.g., Snapdragon 8cx Gen 3]
 
 ## Additional Context
