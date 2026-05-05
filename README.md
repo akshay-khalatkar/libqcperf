@@ -3,16 +3,27 @@
 A lightweight, open-source performance profiling library for Qualcomm chipsets.
 
 ## Table of Contents
-- [Introduction](#introduction)
-- [Framework Features](#framework-features)
-- [Build System](#build-system)
-- [Compilation Instructions](#compilation-instructions)
-  - [Linux ARM64](#linux-arm64)
-    - [Command Line](#command-line)
-    - [CMake Presets](#cmake-presets)
-  - [Windows ARM64](#windows-arm64)
-- [Design Diagrams](#design-diagrams)
-- [Documentation](#documentation)
+- [libqcperf](#libqcperf)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Framework Features](#framework-features)
+    - [Core Capabilities](#core-capabilities)
+    - [Available Backends](#available-backends)
+    - [Technical Foundation](#technical-foundation)
+  - [Build System](#build-system)
+  - [Compilation Instructions](#compilation-instructions)
+    - [Linux ARM64](#linux-arm64)
+      - [Command Line](#command-line)
+      - [CMake Presets](#cmake-presets)
+    - [Windows ARM64](#windows-arm64)
+  - [Design Diagrams](#design-diagrams)
+    - [Sequence Diagram](#sequence-diagram)
+    - [Flow Diagram](#flow-diagram)
+    - [Backend Architecture](#backend-architecture)
+  - [Documentation for backend developers](#documentation-for-backend-developers)
+  - [Contributing](#contributing)
+  - [Security](#security)
+  - [License](#license)
 
 ## Introduction
 
@@ -140,7 +151,7 @@ To build the library for Windows on ARM64 platforms:
 
 ```bash
 # Clone the repository
-git clone https://github.qualcomm.com/ProdTools/libqcperf.git
+git clone https://github.com/qualcomm/libqcperf.git
 cd libqcperf
 
 # Clone third-party dependencies
