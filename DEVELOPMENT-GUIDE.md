@@ -673,7 +673,6 @@ This section outlines the coding standards and best practices for the libqcperf 
   // Backend creation functions
   enum QcPerfReturnCode qcperf_dummy_create(struct QcPerfBackendPrivate* backend);
   enum QcPerfReturnCode qcperf_wos_thermal_create(struct QcPerfBackendPrivate* backend);
-  enum QcPerfReturnCode qcperf_wos_bw_ddr_create(struct QcPerfBackendPrivate* backend);
   ```
 
 #### Structures and Enums
