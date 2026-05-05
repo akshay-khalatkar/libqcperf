@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.13.5)
 
 add_library(QcPerfqlist STATIC
-    src/qlist.c
+    src/QList.c
 )
 
 # Link with qmutex library for thread safety

@@ -1,0 +1,60 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 19,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "linux-aarch64-debug-base",
+            "hidden": true,
+            "displayName": "Linux AArch64 Debug Base (hidden)",
+            "description": "Base preset for Linux AArch64 cross-compilation (Debug). Not used directly — inherit from this in CMakeUserPresets.json.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/../build-linux-aarch64-debug",
+            "cacheVariables": {
+                "TARGET_ARCH": "linux-aarch64",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "linux-aarch64-release-base",
+            "hidden": true,
+            "displayName": "Linux AArch64 Release Base (hidden)",
+            "description": "Base preset for Linux AArch64 cross-compilation (Release). Not used directly — inherit from this in CMakeUserPresets.json.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/../build-linux-aarch64-release",
+            "cacheVariables": {
+                "TARGET_ARCH": "linux-aarch64",
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "linux-aarch64-debug-shared-base",
+            "hidden": true,
+            "displayName": "Linux AArch64 Debug Shared Base (hidden)",
+            "description": "Base preset for Linux AArch64 cross-compilation (Debug, Shared library). Not used directly — inherit from this in CMakeUserPresets.json.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/../build-linux-aarch64-debug-shared",
+            "cacheVariables": {
+                "TARGET_ARCH": "linux-aarch64",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SHARED": "ON"
+            }
+        },
+        {
+            "name": "linux-aarch64-release-shared-base",
+            "hidden": true,
+            "displayName": "Linux AArch64 Release Shared Base (hidden)",
+            "description": "Base preset for Linux AArch64 cross-compilation (Release, Shared library). Not used directly — inherit from this in CMakeUserPresets.json.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/../build-linux-aarch64-release-shared",
+            "cacheVariables": {
+                "TARGET_ARCH": "linux-aarch64",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SHARED": "ON"
+            }
+        }
+    ]
+}

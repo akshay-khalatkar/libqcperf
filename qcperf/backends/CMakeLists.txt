@@ -14,22 +14,41 @@
 #
 # Each backend implements a common interface defined in the inc/ directory,
 # allowing the core library to interact with any backend in a uniform way.
-# Platform-specific backends are conditionally included based on the target platform.
+# Backend inclusion is controlled by QCPERF_ENABLED_* variables set in
+# cmake/BuildConfig.cmake based on the BACKENDS CMake option and the
+# detected platform.
 
 # ============================================================================
 # Backend Subdirectories
 # ============================================================================
-# Add subdirectories for individual backends
-# The dummy backend is always included as a fallback implementation
-add_subdirectory(dummy)
+# Add subdirectories for individual backends, guarded by QCPERF_ENABLED_* flags.
+# To add a new backend:
+#   1. Add its name to QCPERF_PLATFORM_SUPPORTED_BACKENDS in cmake/BuildConfig.cmake
+#   2. Add the corresponding add_subdirectory call below
+
+if(QCPERF_ENABLED_DUMMY)
+    add_subdirectory(dummy)
+endif()
 
 # Add utility libraries used by backends
 add_subdirectory(utils)
 
-# Add platform-specific backends
-# Windows ARM64 platforms include additional backends for hardware monitoring
-if(QCPERF_PLATFORM_WINDOWS_ARM64)
+# Linux ARM64 backends
+if(QCPERF_ENABLED_QCOM_LINUX_CPU)
+    add_subdirectory(qcom-linux-cpu)
+endif()
+
+if(QCPERF_ENABLED_QCOM_LINUX_NPU)
+    add_subdirectory(qcom-dsp)
+    add_subdirectory(qcom-dsp-npu)
+endif()
+
+# Windows ARM64 backends
+if(QCPERF_ENABLED_WOS_THERMAL)
     add_subdirectory(wos-thermal)
+endif()
+
+if(QCPERF_ENABLED_WOS_POWER)
     add_subdirectory(wos-power-backend)
 endif()
 

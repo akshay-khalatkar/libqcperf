@@ -5,6 +5,10 @@
 # aggregates all backend implementations and provides a single point of
 # dependency for the core library. It centralizes backend-specific includes
 # and dependencies, allowing the core to remain decoupled from specific backends.
+#
+# Backend inclusion is controlled by QCPERF_ENABLED_* variables set in
+# cmake/BuildConfig.cmake based on the BACKENDS CMake option and the
+# detected platform.
 
 # ============================================================================
 # Interface Library Target
@@ -21,33 +25,58 @@ add_library(QcPerfBackends INTERFACE)
 # These are the common headers that all backends need to implement
 target_include_directories(QcPerfBackends INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/backends/dummy/inc
 )
 
 # ============================================================================
-# Dependencies
+# Per-Backend Includes and Link Libraries
 # ============================================================================
-# Link against all backend libraries
-# The dummy backend is always included as a fallback
-target_link_libraries(QcPerfBackends INTERFACE
-    QcPerfDummyBackend
-)
+# Each backend is conditionally included based on its QCPERF_ENABLED_* flag.
+# To add a new backend, add a corresponding block below following the same pattern.
 
-# ============================================================================
-# Platform-Specific Configuration
-# ============================================================================
-# Add platform-specific backends
-# Windows ARM64 platforms include additional backends for hardware monitoring
-if(QCPERF_PLATFORM_WINDOWS_ARM64)
+# Dummy backend
+if(QCPERF_ENABLED_DUMMY)
     target_include_directories(QcPerfBackends INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/backends/wos-thermal/inc
-        ${CMAKE_SOURCE_DIR}/backends/wos-power-backend/inc
+        ${CMAKE_SOURCE_DIR}/backends/dummy/inc
     )
+    target_link_libraries(QcPerfBackends INTERFACE
+        QcPerfDummyBackend
+    )
+endif()
 
+# Linux ARM64 backends
+if(QCPERF_ENABLED_QCOM_LINUX_CPU)
+    target_include_directories(QcPerfBackends INTERFACE
+        ${CMAKE_SOURCE_DIR}/backends/qcom-linux-cpu/inc
+    )
+    target_link_libraries(QcPerfBackends INTERFACE
+        QcPerfQcomLinuxCpuBackend
+    )
+endif()
+
+if(QCPERF_ENABLED_QCOM_LINUX_NPU)
+    target_include_directories(QcPerfBackends INTERFACE
+        ${CMAKE_SOURCE_DIR}/backends/qcom-dsp-npu/inc
+    )
+    target_link_libraries(QcPerfBackends INTERFACE
+        QcPerfDspNpuBackend
+    )
+endif()
+
+# Windows ARM64 backends
+if(QCPERF_ENABLED_WOS_THERMAL)
+    target_include_directories(QcPerfBackends INTERFACE
+        ${CMAKE_SOURCE_DIR}/backends/wos-thermal/inc
+    )
     target_link_libraries(QcPerfBackends INTERFACE
         QcPerfWosThermalBackend
+    )
+endif()
+
+if(QCPERF_ENABLED_WOS_POWER)
+    target_include_directories(QcPerfBackends INTERFACE
+        ${CMAKE_SOURCE_DIR}/backends/wos-power-backend/inc
+    )
+    target_link_libraries(QcPerfBackends INTERFACE
         QcPerfWosPowerBackend
     )
-
 endif()

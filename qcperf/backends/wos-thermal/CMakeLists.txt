@@ -3,6 +3,8 @@
 
 cmake_minimum_required(VERSION 3.13.5)
 
+message("Added wos-thermal backend")
+
 # Main thermal backend library
 add_library(QcPerfWosThermalBackend STATIC
     src/wos_thermal.c # Main thermal backend implementation
@@ -18,6 +20,7 @@ target_include_directories(QcPerfWosThermalBackend PUBLIC
     ${CMAKE_SOURCE_DIR}/core/inc/internal # Internal QcPerf includes
     ${CMAKE_SOURCE_DIR}/backends/inc # Backend common includes
     ${CMAKE_SOURCE_DIR}/backends/utils/wos/ioctl/inc # Windows IOCTL utilities
+    ${CMAKE_SOURCE_DIR}/backends/utils/wos/pep/inc # Windows PEP utilities
     ${CMAKE_SOURCE_DIR}/utils/qthread/inc # Thread utilities
     ${CMAKE_SOURCE_DIR}/utils/qtime/inc # Time utilities
 )

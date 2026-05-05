@@ -14,6 +14,8 @@ graph TD
     (Testing/Reference)"]
     Thermal["WOS Thermal Backend
     (Temperature Monitoring)"]
+    DDR["WOS BW DDR Backend
+    (Memory Bandwidth)"]
     Power["WOS Power Backend
     (Power Consumption)"]
     
@@ -34,6 +36,11 @@ graph TD
     - GPU Temperature
     - Passive Cooling States"]
     
+    DDRCap["DDR Capabilities
+    - Bandwidth Usage
+    - Bandwidth Utilization
+    - Clock Frequencies"]
+    
     PowerCap["Power Capabilities
     - CPU Power
     - GPU Power
@@ -47,14 +54,17 @@ graph TD
     Core --> Interface
     Interface --> Dummy
     Interface --> Thermal
+    Interface --> DDR
     Interface --> Power
     
     Dummy --> DummyCap
     Thermal --> ThermalCap
+    DDR --> DDRCap
     Power --> PowerCap
     
     Dummy --> Utils
     Thermal --> Utils
+    DDR --> Utils
     Power --> Utils
     
     Utils --> QThread
@@ -67,6 +77,7 @@ graph TD
     classDef interface fill:#bbdefb,stroke:#1565c0,stroke-width:2px,color:#1565c0,font-weight:bold
     classDef dummy fill:#e3f2fd,stroke:#1565c0,stroke-width:1px,color:#1565c0,font-weight:bold
     classDef thermal fill:#ffcdd2,stroke:#b71c1c,stroke-width:1px,color:#b71c1c,font-weight:bold
+    classDef ddr fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#2e7d32,font-weight:bold
     classDef power fill:#e1bee7,stroke:#6a1b9a,stroke-width:1px,color:#6a1b9a,font-weight:bold
     classDef utils fill:#fff9c4,stroke:#f57f17,stroke-width:1px,color:#f57f17,font-weight:bold
     classDef caps fill:#f5f5f5,stroke:#616161,stroke-width:1px,color:#616161,font-weight:bold
@@ -75,6 +86,7 @@ graph TD
     class Interface interface
     class Dummy dummy
     class Thermal thermal
+    class DDR ddr
     class Power power
     class Utils,QThread,QMutex,QCv,QList utils
-    class ThermalCap,PowerCap,DummyCap caps
+    class ThermalCap,DDRCap,PowerCap,DummyCap caps

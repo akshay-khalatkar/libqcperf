@@ -14,6 +14,8 @@
 #
 # This backend is only built for Windows ARM64 platforms.
 
+message("Added wos-power-backend backend")
+
 add_library(QcPerfWosPowerBackend STATIC
     src/wos_power_backend.c
     ${CMAKE_SOURCE_DIR}/backends/utils/wos/ioctl/src/wos_ioctl.c

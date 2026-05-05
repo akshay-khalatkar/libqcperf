@@ -5,11 +5,11 @@ cmake_minimum_required(VERSION 3.13.5)
 
 if(QCPERF_OS_WINDOWS)
     add_library(QcPerfQMutex STATIC
-        src/windows/qmutex.c
+        src/windows/QMutex.c
     )
 else()
     add_library(QcPerfQMutex STATIC
-        src/linux/qmutex.c
+        src/linux/QMutex.c
     )
 endif()
 

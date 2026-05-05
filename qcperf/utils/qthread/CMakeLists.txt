@@ -3,11 +3,11 @@
 
 if(QCPERF_OS_WINDOWS)
     add_library(QcPerfQThread STATIC
-        src/windows/qthread.c
+        src/windows/QThread.c
     )
 else()
     add_library(QcPerfQThread STATIC
-        src/linux/qthread.c
+        src/linux/QThread.c
     )
 endif()
 

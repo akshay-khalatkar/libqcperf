@@ -10,6 +10,8 @@
 # qcperf/backends/inc, allowing it to be used interchangeably with other
 # backends through the unified backend interface.
 
+message("Added dummy backend")
+
 # Create the dummy backend library
 add_library(QcPerfDummyBackend STATIC
     src/dummy.c
@@ -25,7 +27,7 @@ target_include_directories(QcPerfDummyBackend PUBLIC
     ${CMAKE_SOURCE_DIR}/utils/qtime/inc
 )
 
-target_link_libraries(QcPerfDummyBackend
+target_link_libraries(QcPerfDummyBackend PUBLIC
     QcPerfQThread
     QcPerfQTime
     ${_OS_M}

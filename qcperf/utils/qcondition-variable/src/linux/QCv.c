@@ -43,8 +43,8 @@
  * functionality required by the qcv interface.
  */
 
-#include "qcv.h"
-#include "Qtimer.h"
+#include "QCv.h"
+#include "qtime.h"
 #include <pthread.h>
 
 enum QCvReturnCode cv_create(const struct CvAttributes* cv_request, struct CvInfo* cv_info) {
@@ -58,20 +58,16 @@ enum QCvReturnCode cv_create(const struct CvAttributes* cv_request, struct CvInf
         p_thread_mutex                  = calloc(1, sizeof(pthread_mutex_t));
         if (p_thread_cond == NULL) {
             return_code = RETURN_CODE_CV_MUTEX_MEMORY_CALLOC_FAILED;
-            printf("Linux ConditionVariable memory allocation failed");
         } else if (p_thread_mutex == NULL) {
             return_code = RETURN_CODE_CV_MUTEX_MEMORY_CALLOC_FAILED;
-            printf("Linux Mutex memory allocation failed");
         } else {
             return_signal_code = pthread_cond_init(p_thread_cond, NULL);
             if (return_signal_code != 0) {
                 return_code = RETURN_CODE_CV_CREATE_FAILED;
-                printf("Linux pthread_cond_init API error: %d\n", return_signal_code);
             } else {
                 return_signal_code = pthread_mutex_init(p_thread_mutex, NULL);
                 if (return_signal_code != 0) {
                     return_code = RETURN_CODE_CV_CREATE_FAILED;
-                    printf("Linux pthread_mutex_init API error: %d\n", return_signal_code);
                 } else {
                     cv_info->p_cv_handle    = (void*)p_thread_cond;
                     cv_info->p_mutex_handle = (void*)p_thread_mutex;
@@ -111,7 +107,6 @@ enum QCvReturnCode cv_wait(const struct CvInfo* cv_info) {
         return_signal_code = pthread_cond_wait(p_thread_cond, p_thread_mutex);
         pthread_mutex_unlock(p_thread_mutex);
         if (return_signal_code != 0) {
-            printf("Linux pthread_cond_wait API error: %d\n", return_signal_code);
             return_code = RETURN_CODE_CV_WAIT_FAILED;
         } else {
             return_code = RETURN_CODE_CV_WAIT_COMPLETED;
@@ -141,7 +136,6 @@ enum QCvReturnCode cv_wait_for(const struct CvInfo* cv_info, uint32_t timeout) {
         return_signal_code = pthread_cond_timedwait(p_thread_cond, p_thread_mutex, &tm_spec);
         pthread_mutex_unlock(p_thread_mutex);
         if (return_signal_code != 0) {
-            printf("Linux pthread_cond_timedwait API error: %d\n", return_signal_code);
             return_code = RETURN_CODE_CV_WAIT_FAILED;
         } else {
             return_code = RETURN_CODE_CV_WAIT_COMPLETED;
@@ -167,7 +161,6 @@ enum QCvReturnCode cv_notify(const struct CvInfo* cv_info) {
         return_signal_code = pthread_cond_signal(p_thread_cond);
         pthread_mutex_unlock(p_thread_mutex);
         if (return_signal_code != 0) {
-            printf("Linux pthread_cond_signal API error: %d\n", return_signal_code);
             return_code = RETURN_CODE_CV_NOTIFY_FAILED;
         } else {
             return_code = RETURN_CODE_CV_NOTIFY_SUCCESS;
@@ -193,7 +186,6 @@ enum QCvReturnCode cv_notifyAll(const struct CvInfo* cv_info) {
         return_signal_code = pthread_cond_broadcast(p_thread_cond);
         pthread_mutex_unlock(p_thread_mutex);
         if (return_signal_code != 0) {
-            printf("Linux pthread_cond_broadcast API error: %d\n", return_signal_code);
             return_code = RETURN_CODE_CV_NOTIFY_ALL_FAILED;
         } else {
             return_code = RETURN_CODE_CV_NOTIFY_ALL_SUCCESS;
@@ -217,11 +209,11 @@ enum QCvReturnCode cv_destroy(struct CvInfo* cv_info) {
         p_thread_mutex                  = (pthread_mutex_t*)cv_info->p_mutex_handle;
         return_signal_code              = pthread_cond_destroy(p_thread_cond);
         if (return_signal_code != 0) {
-            printf("Linux pthread_cond_destroy API error: %d\n", return_signal_code);
+            return_code          = RETURN_CODE_CV_COND_DESTROY_FAILED;
         }
         return_signal_code = pthread_mutex_destroy(p_thread_mutex);
         if (return_signal_code != 0) {
-            printf("Linux pthread_mutex_destroy API error: %d\n", return_signal_code);
+            return_code          = RETURN_CODE_CV_MUTEX_DESTROY_FAILED;
         }
         free(cv_info->p_mutex_handle);
         cv_info->p_mutex_handle = NULL;

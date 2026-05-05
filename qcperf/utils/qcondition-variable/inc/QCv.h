@@ -46,6 +46,8 @@
  */
 #define CV_NAME_SIZE 128
 
+#define MS_SECOND_MULTIPLIER 1000U
+
 /**
  * @brief Return codes for condition variable operations
  */
@@ -67,7 +69,9 @@ enum QCvReturnCode {
     RETURN_CODE_CV_DESTROY_SUCCESS,           /**< Condition variable destruction successful */
     RETURN_CODE_CV_INVALID_HANDLE,            /**< Invalid condition variable handle */
     RETURN_CODE_CV_MUTEX_INVALID_HANDLE,      /**< Invalid mutex handle */
-    RETURN_CODE_CV_MUTEX_MEMORY_CALLOC_FAILED /**< Mutex memory allocation failed */
+    RETURN_CODE_CV_MUTEX_MEMORY_CALLOC_FAILED, /**< Mutex memory allocation failed */
+    RETURN_CODE_CV_COND_DESTROY_FAILED,        /**< Thread conditional variable destroy failed */
+    RETURN_CODE_CV_MUTEX_DESTROY_FAILED        /**< Mutex destroy failed */
 };
 
 /**

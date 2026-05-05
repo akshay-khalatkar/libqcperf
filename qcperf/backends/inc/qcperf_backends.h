@@ -36,14 +36,40 @@
  * maintains a registry of all available backend initialization functions.
  * It serves as a unified interface between the core library and all backend
  * implementations, allowing the core to remain decoupled from specific backends.
+ *
+ * Each entry in backend_init_fns[] corresponds to a QcPerfBackendId enum value.
+ * Backends that are not compiled in (i.e. their QCPERF_ENABLED_* definition is
+ * absent) have a NULL entry. The core checks for NULL before invoking an entry
+ * and returns QC_PERF_RETURN_CODE_INVALID_BACKEND_ID for disabled backends.
+ *
+ * To add a new backend:
+ *   1. Add its QCPERF_ENABLED_<NAME> guard and #include below.
+ *   2. Add a corresponding NULL / &init_fn entry in backend_init_fns[].
+ *   3. Add its name to QCPERF_PLATFORM_SUPPORTED_BACKENDS in cmake/BuildConfig.cmake.
  */
 
-#ifndef QC_PERF_BACKENDS_H  // QC_PERF_BACKENDS_H
+#ifndef QC_PERF_BACKENDS_H
 #define QC_PERF_BACKENDS_H
 
+#if defined(QCPERF_ENABLED_DUMMY)
 #include "dummy.h"
+#endif
+
+#if defined(QCPERF_ENABLED_QCOM_LINUX_CPU)
+#include "qcom_linux_cpu.h"
+#endif
+
+#if defined(QCPERF_ENABLED_QCOM_LINUX_NPU)
+#include "qcom_dsp_npu.h"
+#endif
+
+#if defined(QCPERF_ENABLED_WOS_POWER)
 #include "wos_power_backend.h"
+#endif
+
+#if defined(QCPERF_ENABLED_WOS_THERMAL)
 #include "wos_thermal.h"
+#endif
 
 /**
  * @typedef backend_init_t
@@ -60,12 +86,37 @@ typedef enum QcPerfReturnCode (*backend_init_t)(struct QcPerfBackendPrivate*);
 /**
  * @brief Array of backend initialization function pointers
  *
- * This static array contains pointers to all available backend initialization
- * functions. The array is NULL-terminated to allow iteration without knowing
- * the size at compile time. New backends should be added to this array.
+ * This static array contains pointers to all backend initialization functions,
+ * indexed by QcPerfBackendId. Entries for backends that are not compiled in
+ * are set to NULL. The core checks for NULL before invoking an entry.
  *
- * @note The array must always be NULL-terminated
  */
-static backend_init_t backend_init_fns[] = {&qcperf_dummy_create, &wos_power_backend_create, &qcperf_wos_thermal_backend_create};
+static backend_init_t backend_init_fns[] = {
+#if defined(QCPERF_ENABLED_DUMMY)
+    &qcperf_dummy_create,           /* QC_PERF_BACKEND_DUMMY */
+#else
+    NULL,                           /* QC_PERF_BACKEND_DUMMY (disabled) */
+#endif
+#if defined(QCPERF_ENABLED_QCOM_LINUX_CPU)
+    &qcperf_qcom_linux_cpu_create,  /* QC_PERF_BACKEND_QCOM_LINUX_CPU */
+#else
+    NULL,                           /* QC_PERF_BACKEND_QCOM_LINUX_CPU (disabled) */
+#endif
+#if defined(QCPERF_ENABLED_QCOM_LINUX_NPU)
+    &qcperf_dsp_npu_create,         /* QC_PERF_BACKEND_DSP_NPU */
+#else
+    NULL,                           /* QC_PERF_BACKEND_DSP_NPU (disabled) */
+#endif
+#if defined(QCPERF_ENABLED_WOS_POWER)
+    &wos_power_backend_create,      /* QC_PERF_BACKEND_POWER */
+#else
+    NULL,                           /* QC_PERF_BACKEND_POWER (disabled) */
+#endif
+#if defined(QCPERF_ENABLED_WOS_THERMAL)
+    &qcperf_wos_thermal_backend_create, /* QC_PERF_BACKEND_THERMAL */
+#else
+    NULL,                           /* QC_PERF_BACKEND_THERMAL (disabled) */
+#endif
+};
 
 #endif  // QC_PERF_BACKENDS_H

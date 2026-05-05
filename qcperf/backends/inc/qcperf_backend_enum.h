@@ -55,12 +55,20 @@
  *
  * Enumeration of backend implementations available in the QcPerf library.
  * Each backend provides specific performance monitoring capabilities.
+ *
+ * @note All enum values are always defined regardless of which backends are
+ *       compiled. Whether a backend is actually available at runtime is
+ *       controlled by the QCPERF_ENABLED_* compile definitions set via the
+ *       BACKENDS CMake option. Attempting to connect to a backend that was
+ *       not compiled in will return QC_PERF_RETURN_CODE_INVALID_BACKEND_ID.
  */
 enum QcPerfBackendId {
-    QC_PERF_BACKEND_DUMMY = 0, /**< Dummy backend for testing purposes */
-    QC_PERF_BACKEND_POWER,     /**< Power monitoring backend */
-    QC_PERF_BACKEND_THERMAL,   /**< Thermal monitoring backend */
-    QC_PERF_BACKEND_MAX,       /**< Maximum number of backends (sentinel value) */
+    QC_PERF_BACKEND_DUMMY = 0,      /**< Dummy backend for testing purposes */
+    QC_PERF_BACKEND_QCOM_LINUX_CPU, /**< Qualcomm Linux CPU monitoring backend (Linux ARM64) */
+    QC_PERF_BACKEND_DSP_NPU,        /**< Qualcomm DSP NPU monitoring backend (Linux ARM64) */
+    QC_PERF_BACKEND_POWER,          /**< Power monitoring backend (Windows ARM64) */
+    QC_PERF_BACKEND_THERMAL,        /**< Thermal monitoring backend (Windows ARM64) */
+    QC_PERF_BACKEND_MAX,            /**< Sentinel value — total number of backend slots */
 };
 
 #endif /* QCPERF_BACKEND_ENUM_H */

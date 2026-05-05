@@ -7,9 +7,17 @@
 # ============================================================================
 # Library Target
 # ============================================================================
-# Create the main QcPerfCore library as a static library
-# This library implements the core functionality of the QcPerf API
-add_library(QcPerfCore STATIC
+# Build as SHARED when BUILD_SHARED=ON is passed, otherwise STATIC (default).
+# Usage:
+#   cmake -DBUILD_SHARED=ON  ...   -> builds libqcperfCore.so / qcperfCore.dll
+#   cmake                    ...   -> builds libqcperfCore.a  / qcperfCore.lib
+if(BUILD_SHARED)
+    set(QCPERF_CORE_LIB_TYPE SHARED)
+else()
+    set(QCPERF_CORE_LIB_TYPE STATIC)
+endif()
+
+add_library(QcPerfCore ${QCPERF_CORE_LIB_TYPE}
     src/qcperf.c
 )
 
@@ -18,10 +26,9 @@ add_library(QcPerfCore STATIC
 # ============================================================================
 # Set output name and position independent code settings
 # - OUTPUT_NAME: Sets the actual filename of the library
-# - POSITION_INDEPENDENT_CODE: Disabled as this is a static library
 set_target_properties(QcPerfCore PROPERTIES
     OUTPUT_NAME "qcperfCore"
-    POSITION_INDEPENDENT_CODE OFF
+    POSITION_INDEPENDENT_CODE ${BUILD_SHARED}
 )
 
 # ============================================================================
@@ -37,6 +44,23 @@ target_include_directories(QcPerfCore
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>  # For generated versionInfo.h
         ${CMAKE_SOURCE_DIR}/backends/inc
 )
+
+# ============================================================================
+# Compile Definitions
+# ============================================================================
+# Set the correct export/import macro based on the library type:
+if(BUILD_SHARED)
+    target_compile_definitions(QcPerfCore PRIVATE
+        QCPERF_SHARED_LIBRARY
+    )
+    if(NOT MSVC)
+        target_compile_options(QcPerfCore PRIVATE -fvisibility=hidden)
+    endif()
+else()
+    target_compile_definitions(QcPerfCore PUBLIC
+        QCPERF_STATIC_LIBRARY
+    )
+endif()
 
 # ============================================================================
 # Dependencies

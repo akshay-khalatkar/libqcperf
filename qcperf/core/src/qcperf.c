@@ -93,7 +93,7 @@ enum QcPerfReturnCode qcperf_init(void) {
 
 enum QcPerfReturnCode qcperf_version(struct QcPerfVersionInfo* version_info) {
     enum QcPerfReturnCode return_code = QC_PERF_RETURN_CODE_SUCCESS;
-    
+
     if (NULL == version_info) {
         return_code = QC_PERF_RETURN_CODE_NULL_POINTER;
     } else {
@@ -102,7 +102,7 @@ enum QcPerfReturnCode qcperf_version(struct QcPerfVersionInfo* version_info) {
         version_info->patch = LIBQCPERF_VERSION_PATCH;
         version_info->build = LIBQCPERF_VERSION_BUILD;
     }
-    
+
     return return_code;
 }
 
@@ -114,6 +114,8 @@ enum QcPerfReturnCode qcperf_connect_backend(enum QcPerfBackendId backend_id, Qc
         return_code = QC_PERF_RETURN_CODE_INVALID_BACKEND_ID;
     } else if (true == g_backends_connected[backend_id]) {
         return_code = QC_PERF_RETURN_CODE_BACKEND_ALREADY_CONNECTED;
+    } else if (NULL == backend_init_fns[backend_id]) {
+        return_code = QC_PERF_RETURN_CODE_INVALID_BACKEND_ID;
     } else {
         return_code = backend_init_fns[backend_id](&g_qcperf_backend_info[backend_id]);  // Call the backend creation function for the specified backend
         if (QC_PERF_RETURN_CODE_SUCCESS == return_code) {
@@ -279,7 +281,8 @@ enum QcPerfReturnCode qcperf_get_error_info(enum QcPerfReturnCode return_code, s
             return_info->info_str_len = (size_t)snprintf((char*)return_info->info_str, RETURN_CODE_INFO_STRING_MAX_LEN, "%s", "Invalid backend identifier provided, check available backends");
             break;
         case QC_PERF_RETURN_CODE_BACKEND_NOT_CONNECTED:
-            return_info->info_str_len = (size_t)snprintf((char*)return_info->info_str, RETURN_CODE_INFO_STRING_MAX_LEN, "%s", "Backend is not connected, connect the backend before using this function");
+            return_info->info_str_len =
+                (size_t)snprintf((char*)return_info->info_str, RETURN_CODE_INFO_STRING_MAX_LEN, "%s", "Backend is not connected, connect the backend before using this function");
             break;
         case QC_PERF_RETURN_CODE_CALLBACK_ALREADY_SET:
             return_info->info_str_len = (size_t)snprintf((char*)return_info->info_str, RETURN_CODE_INFO_STRING_MAX_LEN, "%s", "Callback function is already set for this backend");

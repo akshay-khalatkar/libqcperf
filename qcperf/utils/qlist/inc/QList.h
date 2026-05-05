@@ -42,7 +42,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "qmutex.h"
+#include "QMutex.h"
 
 /**
  * @brief Return codes for list operations

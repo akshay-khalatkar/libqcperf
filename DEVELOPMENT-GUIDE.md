@@ -18,7 +18,12 @@ This document provides comprehensive information for developers who want to cont
   - [Step 1: Create Backend Header Files](#step-1-create-backend-header-files)
   - [Step 2: Implement Backend Source Files](#step-2-implement-backend-source-files)
   - [Step 3: Register the Backend](#step-3-register-the-backend-with-qcperf)
-  - [Step 4: Update Build Configuration](#step-4-update-build-configuration)
+  - [Step 4: Update CMake Build Files](#step-4-update-cmake-build-files)
+    - [4a: Register in BuildConfig.cmake](#4a-register-the-backend-in-cmakebuildconfigcmake)
+    - [4b: Create backend CMakeLists.txt](#4b-create-backendyour-backendcmakeliststxt)
+    - [4c: Update backends/CMakeLists.txt](#4c-update-backendscmakeliststxt)
+    - [4d: Update backends/inc/CMakeLists.txt](#4d-update-backendsincmakeliststxt)
+    - [CMake Files Summary](#cmake-files-summary)
   - [Testing Your Backend](#testing-your-backend)
 - [Coding Guidelines](#coding-guidelines)
   - [Naming Conventions](#naming-conventions)
@@ -130,6 +135,11 @@ The library includes several specialized backend implementations:
 - Covers 22 thermal zones including CPU clusters, GPU, and critical thermal zones
 - Provides real-time temperature data in degrees Celsius
 - Interfaces with Windows thermal monitoring subsystem via ETW
+
+#### Memory Bandwidth Backend
+- Monitors memory bandwidth and frequency metrics for DDR subsystems
+- Provides metrics for bandwidth usage, utilization, and clock frequencies
+- Interfaces with Windows BW profiler driver for real-time performance data
 
 #### Power Backend
 - Monitors power consumption across various system components
@@ -412,11 +422,13 @@ enum QcPerfReturnCode qcperf_your_backend_create(struct QcPerfBackendPrivate* ba
 
 #### Update Backend Enum (`qcperf_backend_enum.h`)
 
-Add your backend to the `QcPerfBackendId` enum:
+Add your backend's enum value to `QcPerfBackendId`. 
 
 ```c
 enum QcPerfBackendId {
     QC_PERF_BACKEND_DUMMY = 0,
+    QC_PERF_BACKEND_QCOM_LINUX_CPU,
+    QC_PERF_BACKEND_DSP_NPU,
     QC_PERF_BACKEND_POWER,
     QC_PERF_BACKEND_THERMAL,
     QC_PERF_BACKEND_YOUR_BACKEND,  // Add your backend here
@@ -424,69 +436,165 @@ enum QcPerfBackendId {
 };
 ```
 
+> **Important:** The enum order must match the array order in `qcperf_backends.h` exactly.
+
 #### Update Backend Registry (`qcperf_backends.h`)
 
-Add your backend to the `backend_init_fns` array:
+Add your backend's include and a `NULL`/`&init_fn` entry in `backend_init_fns[]`, guarded by `QCPERF_ENABLED_YOUR_BACKEND`. The `NULL` entry ensures the array index stays aligned with the enum even when the backend is not compiled in:
 
 ```c
+#if defined(QCPERF_ENABLED_YOUR_BACKEND)
 #include "your_backend.h"
+#endif
 
 static backend_init_t backend_init_fns[] = {
-    &qcperf_dummy_create, 
-    &wos_power_backend_create, 
-    &qcperf_wos_thermal_create,
-    &qcperf_your_backend_create  // Add your backend here
+    /* ... existing entries ... */
+#if defined(QCPERF_ENABLED_YOUR_BACKEND)
+    &qcperf_your_backend_create,    /* QC_PERF_BACKEND_YOUR_BACKEND */
+#else
+    NULL,                           /* QC_PERF_BACKEND_YOUR_BACKEND (disabled) */
+#endif
 };
 ```
 
-### Step 4: Update Build Configuration
+### Step 4: Update CMake Build Files
 
-#### Create CMakeLists.txt for Your Backend
+The build system uses a **selective backend mechanism**: registering a backend name in `cmake/BuildConfig.cmake` automatically derives a `QCPERF_ENABLED_*` compile definition that gates both the CMake build targets and the C preprocessor includes in `qcperf_backends.h`. Four files must be updated.
 
-Create a `CMakeLists.txt` file in your backend directory:
+#### How `QCPERF_ENABLED_*` flags are derived
+
+The flag name is constructed from the backend name as registered in `QCPERF_PLATFORM_SUPPORTED_BACKENDS`:
+
+- If no OS prefix is set, the flag is `QCPERF_ENABLED_<NAME>`.  
+  Example: registering `QCOM_LINUX_CPU` → `QCPERF_ENABLED_QCOM_LINUX_CPU`
+- If an OS prefix is configured via `QCPERF_BACKEND_OS_PREFIX_<NAME>`, the flag becomes `QCPERF_ENABLED_<OS_PREFIX>_<NAME>`.  
+  Example: registering `THERMAL` with prefix `WOS` → `QCPERF_ENABLED_WOS_THERMAL`
+
+Use this flag consistently across all four files below.
+
+---
+
+#### 4a. Register the Backend in `cmake/BuildConfig.cmake`
+
+Each platform has its own `list(APPEND QCPERF_PLATFORM_SUPPORTED_BACKENDS ...)` call in `cmake/BuildConfig.cmake`. **Append your backend's nickname to the list for the target OS.** The table below shows the existing nicknames per platform and the `QCPERF_ENABLED_*` flag each one produces:
+
+| Platform | CMake guard variable | Registered nicknames | Derived `QCPERF_ENABLED_*` flag |
+|----------|---------------------|----------------------|----------------------------------|
+| All platforms | *(always included)* | `DUMMY` | `QCPERF_ENABLED_DUMMY` |
+| Linux ARM64 | `QCPERF_PLATFORM_LINUX_ARM64` | `QCOM_LINUX_CPU` | `QCPERF_ENABLED_QCOM_LINUX_CPU` |
+| Linux ARM64 | `QCPERF_PLATFORM_LINUX_ARM64` | `QCOM_LINUX_NPU` | `QCPERF_ENABLED_QCOM_LINUX_NPU` |
+| Windows ARM64 | `QCPERF_PLATFORM_WINDOWS_ARM64` | `WOS_THERMAL` | `QCPERF_ENABLED_WOS_THERMAL` |
+| Windows ARM64 | `QCPERF_PLATFORM_WINDOWS_ARM64` | `WOS_POWER` | `QCPERF_ENABLED_WOS_POWER` |
+
+Add your backend's nickname to the appropriate platform block. This is the **only change needed** in `BuildConfig.cmake` for most backends:
 
 ```cmake
-# Your backend CMakeLists.txt
-cmake_minimum_required(VERSION 3.15)
+# Example: register YOUR_BACKEND for Linux ARM64
+# Append YOUR_BACKEND to the existing Linux ARM64 list
+if(QCPERF_PLATFORM_LINUX_ARM64)
+    list(APPEND QCPERF_PLATFORM_SUPPORTED_BACKENDS QCOM_LINUX_CPU QCOM_LINUX_NPU YOUR_BACKEND)
+endif()
 
-# Define source files
-set(YOUR_BACKEND_SOURCES
+# Example: register YOUR_BACKEND for Windows ARM64
+# Append YOUR_BACKEND to the existing Windows ARM64 list
+if(QCPERF_PLATFORM_WINDOWS_ARM64)
+    list(APPEND QCPERF_PLATFORM_SUPPORTED_BACKENDS WOS_THERMAL WOS_POWER YOUR_BACKEND)
+endif()
+```
+
+The compile definition `QCPERF_ENABLED_YOUR_BACKEND` will be set automatically — no further changes to `BuildConfig.cmake` are needed.
+
+> **Note:** If your backend requires an OS prefix (e.g., `WOS` for Windows on Snapdragon backends), set `QCPERF_BACKEND_OS_PREFIX_YOUR_BACKEND` to the appropriate prefix so the flag becomes `QCPERF_ENABLED_WOS_YOUR_BACKEND`. Existing WOS backends use this pattern.
+
+---
+
+#### 4b. Create `backends/your-backend/CMakeLists.txt`
+
+Create a `CMakeLists.txt` in your backend directory. Follow the naming and include conventions used by existing backends:
+
+```cmake
+# ============================================================================
+# QcPerf Your Backend
+# ============================================================================
+# Brief description of what this backend monitors.
+
+message("Added your-backend backend")
+
+# Create the backend library — use QcPerf<Name>Backend naming convention
+add_library(QcPerfYourBackend STATIC
     src/your_backend.c
     src/your_backend_info.c
 )
 
-# Define header files
-set(YOUR_BACKEND_HEADERS
-    inc/your_backend.h
-    inc/your_backend_info.h
+target_include_directories(QcPerfYourBackend PUBLIC
+    inc
+    ${CMAKE_SOURCE_DIR}/core/inc
+    ${CMAKE_SOURCE_DIR}/core/inc/internal
+    ${CMAKE_SOURCE_DIR}/backends/inc
+    ${CMAKE_SOURCE_DIR}/utils/qthread/inc
+    ${CMAKE_SOURCE_DIR}/utils/qtime/inc
 )
 
-# Create library target
-add_library(your_backend STATIC ${YOUR_BACKEND_SOURCES} ${YOUR_BACKEND_HEADERS})
-
-# Set include directories
-target_include_directories(your_backend
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-# Link dependencies
-target_link_libraries(your_backend
-    PUBLIC
-        qcperf_core
+target_link_libraries(QcPerfYourBackend
+    QcPerfQThread
+    QcPerfQTime
+    ${_OS_M}
 )
 ```
 
-#### Update Main CMakeLists.txt
+Key conventions to follow:
+- **Library target name**: `QcPerf<Name>Backend` (e.g., `QcPerfDummyBackend`, `QcPerfQcomLinuxCpuBackend`)
+- **Always include** `${CMAKE_SOURCE_DIR}/core/inc`, `${CMAKE_SOURCE_DIR}/core/inc/internal`, and `${CMAKE_SOURCE_DIR}/backends/inc` so the backend can access the core API and backend interface headers
+- **Always link** `QcPerfQThread` and `QcPerfQTime` for threading and timing utilities
+- **`${_OS_M}`** links the math library on Linux (set automatically by `BuildConfig.cmake`)
+- Do **not** add `cmake_minimum_required()` — it is set once in the top-level `CMakeLists.txt`
 
-Add your backend to the main `backends/CMakeLists.txt`:
+---
+
+#### 4c. Update `backends/CMakeLists.txt`
+
+Add an `add_subdirectory` call guarded by the `QCPERF_ENABLED_*` flag. Place it in the appropriate platform section:
 
 ```cmake
-# Add your backend subdirectory
-add_subdirectory(your_backend)
+# Linux ARM64 backends
+if(QCPERF_ENABLED_YOUR_BACKEND)
+    add_subdirectory(your-backend)
+endif()
 ```
+
+The directory name passed to `add_subdirectory` must match the actual directory name under `backends/`.
+
+---
+
+#### 4d. Update `backends/inc/CMakeLists.txt`
+
+Add your backend's include directory and link its library into the `QcPerfBackends` interface target. The `QcPerfBackends` target is what the core library links against, so this step makes your backend available to the core:
+
+```cmake
+if(QCPERF_ENABLED_YOUR_BACKEND)
+    target_include_directories(QcPerfBackends INTERFACE
+        ${CMAKE_SOURCE_DIR}/backends/your-backend/inc
+    )
+    target_link_libraries(QcPerfBackends INTERFACE
+        QcPerfYourBackend
+    )
+endif()
+```
+
+The library name in `target_link_libraries` must match the `add_library` target name defined in your backend's `CMakeLists.txt` (step 4b).
+
+---
+
+#### CMake Files Summary
+
+The table below lists every file that must be modified when adding a new backend:
+
+| File | What to add |
+|------|-------------|
+| `cmake/BuildConfig.cmake` | Add backend name to `QCPERF_PLATFORM_SUPPORTED_BACKENDS` for the target platform |
+| `backends/your-backend/CMakeLists.txt` | **Create new file** — `add_library(QcPerfYourBackend ...)` with correct includes and link libraries |
+| `backends/CMakeLists.txt` | Add `if(QCPERF_ENABLED_YOUR_BACKEND) add_subdirectory(your-backend) endif()` |
+| `backends/inc/CMakeLists.txt` | Add `if(QCPERF_ENABLED_YOUR_BACKEND)` block with `target_include_directories` and `target_link_libraries` into `QcPerfBackends` |
 
 ### Testing Your Backend
 
@@ -525,6 +633,7 @@ This section outlines the coding standards and best practices for the libqcperf 
   // Backend creation functions
   enum QcPerfReturnCode qcperf_dummy_create(struct QcPerfBackendPrivate* backend);
   enum QcPerfReturnCode qcperf_wos_thermal_create(struct QcPerfBackendPrivate* backend);
+  enum QcPerfReturnCode qcperf_wos_bw_ddr_create(struct QcPerfBackendPrivate* backend);
   ```
 
 #### Structures and Enums
@@ -547,6 +656,7 @@ This section outlines the coding standards and best practices for the libqcperf 
   enum QcPerfBackendId {
       QC_PERF_BACKEND_DUMMY = 0,
       QC_PERF_BACKEND_POWER,
+      QC_PERF_BACKEND_DDR,
       QC_PERF_BACKEND_THERMAL,
       QC_PERF_BACKEND_MAX,
   };

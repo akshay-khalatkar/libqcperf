@@ -5,10 +5,10 @@ if(QCPERF_OS_WINDOWS)
     add_library(QcPerfQTime STATIC
         src/windows/qtime.c
     )
-# else()
-#     add_library(QcPerfQTime STATIC
-#         src/linux/qtime.c
-#     )
+else()
+    add_library(QcPerfQTime STATIC
+        src/linux/qtime.c
+    )
 endif()
 
 # Link with OS-specific time libraries
