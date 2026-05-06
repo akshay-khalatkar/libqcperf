@@ -187,6 +187,29 @@ The library includes several specialized backend implementations:
 - All power metrics measured in milliwatts (mW)
 - Provides average power consumption over sampling period
 
+#### DSP NPU Backend (Linux ARM64)
+- Collects performance metrics from the Qualcomm CDSP/NPU hardware via FastRPC
+- Provides Q6 utilization, Q6 clock, HVX utilization, and HMX utilization metrics
+- Communicates with the DSP using the `sysmonquery` interface over FastRPC
+
+##### Runtime Dependency: `libcdsprpc.so`
+
+The DSP NPU backend requires `libcdsprpc.so` to be present on the target device at runtime. This library is part of the Qualcomm BSP (Board Support Package) and provides the FastRPC transport used to communicate with the CDSP.
+
+> **Note:** `libcdsprpc.so` is **not** built from source — the build system compiles a stub (`cdsprpc_stub.c`) that satisfies the linker at compile time. The real `libcdsprpc.so` must be present on the device at runtime, typically at `/usr/lib/libcdsprpc.so`.
+
+**What happens if `libcdsprpc.so` is missing:**
+
+| Scenario | Behavior |
+|----------|----------|
+| `libcdsprpc.so` absent from device | Dynamic linker fails to load the application — process does not start. No graceful fallback. |
+| `libcdsprpc.so` present, but CDSP inaccessible | `qcom_dsp_init()` returns a non-success error code. `dsp_npu_init()` reports the failure via the message callback at `QC_PERF_MESSAGE_LEVEL_ERROR` and returns `QC_PERF_RETURN_CODE_FAILED`. |
+
+**Recommendation:** Before running an application that uses the DSP NPU backend, verify the library is present on the device:
+```bash
+ls /usr/lib/libcdsprpc.so
+```
+
 ---
 
 ## Adding New Backends
