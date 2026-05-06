@@ -41,7 +41,7 @@
  * and TerminateThread to provide the functionality required by the qthread interface.
  */
 
-#include "qthread.h"
+#include "QThread.h"
 #include <windows.h>
 
 enum QThreadReturnCode thread_create(struct QThreadAttributes* thread_request, struct QThreadInfo* thread_info) {
