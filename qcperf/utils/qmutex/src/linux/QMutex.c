@@ -42,7 +42,7 @@
  * provide the functionality required by the qmutex interface.
  */
 
-#include "qmutex.h"
+#include "QMutex.h"
 #include <pthread.h>
 
 enum QMutexReturnCode mutex_create(const struct MutexAttributes* mutex_request, struct MutexInfo* mutex_info) {
@@ -53,10 +53,9 @@ enum QMutexReturnCode mutex_create(const struct MutexAttributes* mutex_request, 
         pthread_mutex_t* lock = (pthread_mutex_t*)calloc(1, sizeof(pthread_mutex_t));
         if (lock == NULL) {
             return_code = RETURN_CODE_MUTEX_NULL_POINTER;
-            printf("Unable to create mutex.\n");
         } else {
             mutex_info->p_mutex_handle = (void*)lock;
-            uint16_t return_init       = pthread_mutex_init(mutex_info->p_mutex_handle, NULL);
+            uint16_t return_init       = (uint16_t)pthread_mutex_init(mutex_info->p_mutex_handle, NULL);
             if (return_init == 0) {
                 return_code = RETURN_CODE_MUTEX_CREATE_SUCCESS;
             }
@@ -80,11 +79,10 @@ enum QMutexReturnCode mutex_lock(const struct MutexInfo* mutex_info) {
         return_code = RETURN_CODE_MUTEX_NULL_POINTER;
     } else {
         pthread_mutex_t* lock = (pthread_mutex_t*)mutex_info->p_mutex_handle;
-        uint32_t return_lock  = pthread_mutex_lock(lock);
+        uint32_t return_lock  = (uint32_t)pthread_mutex_lock(lock);
         if (return_lock == 0) {
             return_code = RETURN_CODE_MUTEX_LOCK_SUCCESS;
         } else {
-            printf("Mutex lock failed.\n");
             return_code = RETURN_CODE_MUTEX_LOCK_FAILED;
         }
     }
@@ -97,11 +95,10 @@ enum QMutexReturnCode mutex_unlock(const struct MutexInfo* mutex_info) {
         return_code = RETURN_CODE_MUTEX_NULL_POINTER;
     } else {
         pthread_mutex_t* lock = (pthread_mutex_t*)mutex_info->p_mutex_handle;
-        uint32_t return_lock  = pthread_mutex_unlock(lock);
+        uint32_t return_lock  = (uint32_t)pthread_mutex_unlock(lock);
         if (return_lock == 0) {
             return_code = RETURN_CODE_MUTEX_UNLOCK_SUCCESS;
         } else {
-            printf("Mutex unlock failed.\n");
             return_code = RETURN_CODE_MUTEX_UNLOCK_FAILED;
         }
     }
@@ -114,11 +111,10 @@ enum QMutexReturnCode mutex_destroy(struct MutexInfo* mutex_info) {
         return_code = RETURN_CODE_MUTEX_NULL_POINTER;
     } else {
         pthread_mutex_t* lock = (pthread_mutex_t*)mutex_info->p_mutex_handle;
-        uint32_t return_lock  = pthread_mutex_destroy(lock);
+        uint32_t return_lock  = (uint32_t)pthread_mutex_destroy(lock);
         if (return_lock == 0) {
             return_code = RETURN_CODE_MUTEX_DESTROY_SUCCESS;
         } else {
-            printf("Mutex destroy failed.\n");
             return_code = RETURN_CODE_MUTEX_DESTROY_FAILED;
         }
         free(lock);

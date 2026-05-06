@@ -5,15 +5,21 @@ cmake_minimum_required(VERSION 3.13.5)
 
 if(QCPERF_OS_WINDOWS)
     add_library(QcPerfQCv STATIC
-        src/windows/qcv.c
+        src/windows/QCv.c
     )
 else()
     add_library(QcPerfQCv STATIC
-        src/linux/qcv.c
+        src/linux/QCv.c
+    )
+    target_link_libraries(QcPerfQCv PUBLIC
+        QcPerfQTime
+    )
+    target_include_directories(QcPerfQCv PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/qtime/inc
     )
 endif()
 
-# Include public headers
+
 target_include_directories(QcPerfQCv PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )

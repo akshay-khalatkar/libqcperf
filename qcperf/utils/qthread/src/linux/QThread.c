@@ -41,7 +41,7 @@
  * and pthread_cancel to provide the functionality required by the qthread interface.
  */
 
-#include "qthread.h"
+#include "QThread.h"
 #include <pthread.h>
 #include <stdlib.h>
 

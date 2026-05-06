@@ -30,6 +30,4 @@ target_include_directories(QcWosPowerTelemetry PUBLIC
                             ${CMAKE_SOURCE_DIR}/backends/wos-power-backend/power-telemetry/inc/
                             ${CMAKE_SOURCE_DIR}/core/inc/
                             ${CMAKE_SOURCE_DIR}/backends/utils/wos/ioctl/inc/
-                            ${CMAKE_SOURCE_DIR}/backends/utils/wos/pep/inc/
-                            
                             )

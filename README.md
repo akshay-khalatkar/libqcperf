@@ -3,12 +3,27 @@
 A lightweight, open-source performance profiling library for Qualcomm chipsets.
 
 ## Table of Contents
-- [Introduction](#introduction)
-- [Framework Features](#framework-features)
-- [Build System](#build-system)
-- [Compilation Instructions](#compilation-instructions)
-- [Design Diagrams](#design-diagrams)
-- [Documentation](#documentation)
+- [libqcperf](#libqcperf)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Framework Features](#framework-features)
+    - [Core Capabilities](#core-capabilities)
+    - [Available Backends](#available-backends)
+    - [Technical Foundation](#technical-foundation)
+  - [Build System](#build-system)
+  - [Compilation Instructions](#compilation-instructions)
+    - [Linux ARM64](#linux-arm64)
+      - [Command Line](#command-line)
+      - [CMake Presets](#cmake-presets)
+    - [Windows ARM64](#windows-arm64)
+  - [Design Diagrams](#design-diagrams)
+    - [Sequence Diagram](#sequence-diagram)
+    - [Flow Diagram](#flow-diagram)
+    - [Backend Architecture](#backend-architecture)
+  - [Documentation for backend developers](#documentation-for-backend-developers)
+  - [Contributing](#contributing)
+  - [Security](#security)
+  - [License](#license)
 
 ## Introduction
 
@@ -30,16 +45,20 @@ Originally inspired by the Qualcomm Profiler tool, libqcperf is now available as
 
 ### Available Backends
 
-| Backend | Description | Metrics & Configuration Reference |
-|---------|-------------|-----------------------------------|
-| **Thermal Backend** | Monitors temperature and passive cooling metrics across 22 thermal zones | [wos_thermal_info.h](qcperf/backends/wos-thermal/inc/wos_thermal_info.h) |
-| **Power Backend** | Measures power consumption across various system components | [wos_power_backend_info.h](qcperf/backends/wos-power-backend/inc/wos_power_backend_info.h) |
-| **Dummy Backend** | Reference implementation for testing and development | [dummy_info.h](qcperf/backends/dummy/inc/dummy_info.h) |
+| Backend | OS / Platform | `-DBACKENDS` Flag | Compile Definition | Description | Metrics & Configuration Reference |
+|---------|--------------|-------------------|--------------------|-------------|-----------------------------------|
+| **Thermal Backend** | Windows on Snapdragon (WoS) | `THERMAL` | `QCPERF_ENABLED_WOS_THERMAL` | Monitors temperature and passive cooling metrics across 22 thermal zones | [wos_thermal_info.h](qcperf/backends/wos-thermal/inc/wos_thermal_info.h) |
+| **Power Backend** | Windows on Snapdragon (WoS) | `POWER` | `QCPERF_ENABLED_WOS_POWER` | Measures power consumption across various system components | [wos_power_backend_info.h](qcperf/backends/wos-power-backend/inc/wos_power_backend_info.h) |
+| **Linux CPU Backend** | Qcom Linux | `CPU` | `QCPERF_ENABLED_QCOM_LINUX_CPU` | Monitors CPU load, frequency, effective utilization, steal time, and DCVS frequency limit per core (up to 18 cores) | [qcom_linux_cpu_info.h](qcperf/backends/qcom-linux-cpu/inc/qcom_linux_cpu_info.h) |
+| **DSP NPU Backend** | Qcom Linux | `NPU` | `QCPERF_ENABLED_QCOM_LINUX_NPU` | Monitors Neural Processing Unit (NPU) performance metrics including Q6 utilization, Q6 clock frequency, HVX utilization, and HMX utilization | [qcom_dsp_npu_info.h](qcperf/backends/qcom-dsp-npu/inc/qcom_dsp_npu_info.h) |
+| **Dummy Backend** | All | `DUMMY` | `QCPERF_ENABLED_DUMMY` | Reference implementation for testing and development | [dummy_info.h](qcperf/backends/dummy/inc/dummy_info.h) |
 
 > **Note:** Each backend's info.h file contains detailed information about supported capability, metrics, sampling rates, and streaming rates.
+>
 
 ### Technical Foundation
-- Relies on publicly available Windows driver APIs (ETW, PEP, IOCTL)
+- WoS backends rely on publicly available Windows driver APIs (ETW, IOCTL)
+- Linux backends rely on standard Linux kernel interfaces (sysfs, procfs)
 - Comprehensive error handling and resource management
 - Thread-safe operations for multi-threaded applications
 
@@ -48,8 +67,83 @@ Originally inspired by the Qualcomm Profiler tool, libqcperf is now available as
 - **CMake**
 - **Compiler**
   - Windows on Snapdragon - Visual Studio 2022
+  - Linux ARM64 - ARM GNU Toolchain (`aarch64-none-linux-gnu-gcc`)
 
 ## Compilation Instructions
+
+### Linux ARM64
+
+To cross-compile the library for Linux on ARM64 platforms, you need the [ARM GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (`arm-gnu-toolchain-**.*.rel1-x86_64-aarch64-none-linux-gnu`).
+
+#### Command Line
+
+```bash
+# Set the toolchain path (adjust to your installation directory)
+export AARCH64_TOOLCHAIN_PATH=/path/to/arm-gnu-toolchain
+
+# Configure and generate build files
+cmake -S qcperf -B build-linux-aarch64-release \
+    -DTARGET_ARCH=linux-aarch64 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DProjectVersion="0.1.0.0" \
+    -DBACKENDS="CPU;NPU;DUMMY" \
+    -DBUILD_SHARED=OFF
+
+# Compile the project
+cmake --build build-linux-aarch64-release
+```
+
+| Flag | Value | Description |
+|------|-------|-------------|
+| `-S qcperf` | `qcperf` | Source directory containing the top-level `CMakeLists.txt` |
+| `-B build-linux-aarch64-release` | `build-linux-aarch64-release` | Output directory for generated build files and compiled artifacts |
+| `-DTARGET_ARCH` | `linux-aarch64` | Selects the cross-compilation toolchain for Linux ARM64; requires `AARCH64_TOOLCHAIN_PATH` to be set |
+| `-DCMAKE_BUILD_TYPE` | `Release` / `Debug` | Build type: `Release` produces an optimized binary; `Debug` includes debug symbols |
+| `-DProjectVersion` | `"0.1.0.0"` | Sets the library version string embedded in the build |
+| `-DBACKENDS` | `"CPU;NPU;DUMMY"` | Semicolon-separated list of backends to compile (case-insensitive); omit this flag to compile all backends supported on the target platform |
+| `-DBUILD_SHARED` | `OFF` / `ON` | `OFF` builds a static library (`.a`); `ON` builds a shared library (`.so`) |
+
+> **Note:** Only backends supported on the target platform are compiled even if listed explicitly (e.g., specifying `power` on Linux ARM64 will be silently skipped with a warning).
+
+#### CMake Presets
+
+The build is configured via CMake presets defined in `qcperf/CMakePresets.json` (shared base) and `qcperf/CMakeUserPresets.json` (user-local overrides).
+
+**Toolchain path — priority order:**
+1. Environment variable `AARCH64_TOOLCHAIN_PATH` (takes precedence if set)
+2. Value defined in the `linux-aarch64-user-base` hidden preset in `qcperf/CMakeUserPresets.json` (fallback default)
+
+To change the toolchain path or project version, edit **only** the `linux-aarch64-user-base` preset in `qcperf/CMakeUserPresets.json` — all other presets inherit from it automatically.
+
+| Preset | Build Type | Library Type | Output Directory |
+|--------|-----------|--------------|-----------------|
+| `linux-aarch64-debug` | Debug | Static | `build-linux-aarch64-debug/` |
+| `linux-aarch64-release` | Release | Static | `build-linux-aarch64-release/` |
+| `linux-aarch64-debug-shared` | Debug | Shared (`.so`) | `build-linux-aarch64-debug-shared/` |
+| `linux-aarch64-release-shared` | Release | Shared (`.so`) | `build-linux-aarch64-release-shared/` |
+
+e.g. for a debug build:
+
+```bash
+# Configure
+cd qcperf
+cmake --preset linux-aarch64-debug
+
+# Compile the project
+cmake --build --preset linux-aarch64-debug
+```
+
+e.g. for a release shared library build:
+
+```bash
+# Configure
+cd qcperf
+cmake --preset linux-aarch64-release-shared
+
+# Compile the project
+cmake --build --preset linux-aarch64-release-shared
+```
+
 
 ### Windows ARM64
 

@@ -3,6 +3,8 @@
 
 cmake_minimum_required(VERSION 3.13.5)
 
+message("Added wos-thermal backend")
+
 # Main thermal backend library
 add_library(QcPerfWosThermalBackend STATIC
     src/wos_thermal.c # Main thermal backend implementation

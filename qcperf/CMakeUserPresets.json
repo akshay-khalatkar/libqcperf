@@ -1,0 +1,65 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "linux-aarch64-user-base",
+            "hidden": true,
+            "displayName": "Linux AArch64 User Base (hidden)",
+            "description": "User-specific base preset. Set AARCH64_TOOLCHAIN_PATH and ProjectVersion here once — all Linux AArch64 presets inherit from this.",
+            "cacheVariables": {
+                "ProjectVersion": "0.1.0.0",
+                "AARCH64_TOOLCHAIN_PATH": "/path/to/arm-gnu-toolchain"
+            }
+        },
+        {
+            "name": "linux-aarch64-debug",
+            "displayName": "Linux AArch64 Debug",
+            "description": "Cross-compile for Linux AArch64 (Debug) using ARM GNU Toolchain. AARCH64_TOOLCHAIN_PATH is read from the environment variable if set, otherwise falls back to the value defined in linux-aarch64-user-base.",
+            "inherits": ["linux-aarch64-debug-base", "linux-aarch64-user-base"]
+        },
+        {
+            "name": "linux-aarch64-release",
+            "displayName": "Linux AArch64 Release",
+            "description": "Cross-compile for Linux AArch64 (Release) using ARM GNU Toolchain. AARCH64_TOOLCHAIN_PATH is read from the environment variable if set, otherwise falls back to the value defined in linux-aarch64-user-base.",
+            "inherits": ["linux-aarch64-release-base", "linux-aarch64-user-base"]
+        },
+        {
+            "name": "linux-aarch64-debug-shared",
+            "displayName": "Linux AArch64 Debug Shared",
+            "description": "Cross-compile for Linux AArch64 (Debug, Shared library). QcPerfCore is built as a shared object (.so).",
+            "inherits": ["linux-aarch64-debug-shared-base", "linux-aarch64-user-base"]
+        },
+        {
+            "name": "linux-aarch64-release-shared",
+            "displayName": "Linux AArch64 Release Shared",
+            "description": "Cross-compile for Linux AArch64 (Release, Shared library). QcPerfCore is built as a shared object (.so).",
+            "inherits": ["linux-aarch64-release-shared-base", "linux-aarch64-user-base"]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "linux-aarch64-debug",
+            "displayName": "Build Linux AArch64 Debug",
+            "description": "Build the linux-aarch64-debug configure preset",
+            "configurePreset": "linux-aarch64-debug"
+        },
+        {
+            "name": "linux-aarch64-release",
+            "displayName": "Build Linux AArch64 Release",
+            "description": "Build the linux-aarch64-release configure preset",
+            "configurePreset": "linux-aarch64-release"
+        },
+        {
+            "name": "linux-aarch64-debug-shared",
+            "displayName": "Build Linux AArch64 Debug Shared",
+            "description": "Build QcPerfCore as a shared library (Debug)",
+            "configurePreset": "linux-aarch64-debug-shared"
+        },
+        {
+            "name": "linux-aarch64-release-shared",
+            "displayName": "Build Linux AArch64 Release Shared",
+            "description": "Build QcPerfCore as a shared library (Release)",
+            "configurePreset": "linux-aarch64-release-shared"
+        }
+    ]
+}

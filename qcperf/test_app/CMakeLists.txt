@@ -20,6 +20,11 @@ target_link_libraries(QcPerfCoreTest
     PUBLIC
         QcPerfCore
 )
+if(NOT BUILD_SHARED AND QCPERF_LINUX_ARM64 AND QCPERF_ENABLED_QCOM_LINUX_NPU)
+    target_link_libraries(QcPerfCoreTest PRIVATE
+        cdsprpc
+    )
+endif()
 
 # Compiler-specific options for the core library
 if(MSVC)

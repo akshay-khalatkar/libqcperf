@@ -47,7 +47,7 @@
 
 #include "dummy.h"
 #include "qcperf_backend_interface.h"
-#include "qthread.h"
+#include "QThread.h"
 #include "qtime.h"
 
 static QcPerfMessageCallback g_message_callback = NULL;
@@ -508,9 +508,8 @@ static void* get_dummy_data(void* param) {
     uint64_t current_time                        = 0;
     uint64_t last_stream_time                    = 0;
     uint64_t elapsed_ns                          = 0;
-    char dummy_string[64];
-    uint32_t sample_count                        = 0;
-    enum QTimeReturnCode time_return_code        = RETURN_CODE_TIME_FAILED;
+    char dummy_string[64]                        = {0};
+    uint32_t sample_count = 0;
 
     if (NULL != request) {
         g_is_thread_running = true;
@@ -525,9 +524,8 @@ static void* get_dummy_data(void* param) {
         if (NULL != capability_info) {
             // Calculate how many samples to collect before streaming
             // Convert ms to ns for consistent calculations
-            uint64_t sampling_rate_ns  = (uint64_t)request->sampling_rate * 1000000ULL;
             uint64_t streaming_rate_ns = (uint64_t)request->streaming_rate * 1000000ULL;
-            samples_per_stream = (uint32_t)((request->streaming_rate + request->sampling_rate - 1) / request->sampling_rate);
+            samples_per_stream         = (uint32_t)((request->streaming_rate + request->sampling_rate - 1) / request->sampling_rate);
 
             total_metrics = samples_per_stream * capability_info->metric_ids_list_len;
 
@@ -550,11 +548,11 @@ static void* get_dummy_data(void* param) {
                         }
                     }
 
-                    time_return_code = get_time_ns(&current_time);
+                    get_time_ns(&current_time);
                     last_stream_time = current_time;
 
                     while (g_is_thread_running) {
-                        time_return_code = get_time_ns(&current_time);
+                        get_time_ns(&current_time);
 
                         for (uint32_t i = 0; i < capability_info->metric_ids_list_len; i++) {
                             uint32_t metric_index = data->metric_response_len;
@@ -562,7 +560,7 @@ static void* get_dummy_data(void* param) {
                                 SEND_MESSAGE(QC_PERF_MESSAGE_LEVEL_ERROR, "Metric index exceeds allocated size");
                                 break;
                             }
-                            
+
                             data->metric_response[metric_index].metric_id = capability_info->metric_ids_list[i].metric_id;
                             data->metric_response[metric_index].timestamp = current_time;
 

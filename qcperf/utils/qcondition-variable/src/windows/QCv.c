@@ -42,7 +42,7 @@
  * to provide the functionality required by the qcv interface.
  */
 
-#include "qcv.h"
+#include "QCv.h"
 #include <Windows.h>
 
 enum QCvReturnCode cv_create(const struct CvAttributes* cv_request, struct CvInfo* cv_info) {
@@ -105,7 +105,6 @@ enum QCvReturnCode cv_wait(const struct CvInfo* cv_info) {
         LeaveCriticalSection(p_mutex_handle);
 
         if (0 == return_signal_code) {
-            printf("Windows SleepConditionVariableCS API error: %d\n", GetLastError());
             return_code = RETURN_CODE_CV_WAIT_FAILED;
         } else {
             return_code = RETURN_CODE_CV_WAIT_COMPLETED;

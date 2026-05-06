@@ -72,6 +72,12 @@ endif()
 message(STATUS "QcPerf Platform Configuration:")
 message(STATUS "  OS: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "  Architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+if(CMAKE_CROSSCOMPILING)
+    message(STATUS "  Cross-compiling: YES (host=${CMAKE_HOST_SYSTEM_PROCESSOR} -> target=${CMAKE_SYSTEM_PROCESSOR})")
+    message(STATUS "  C compiler: ${CMAKE_C_COMPILER}")
+else()
+    message(STATUS "  Cross-compiling: NO (native build)")
+endif()
 
 # ============================================================================
 # Platform-Specific Configurations
@@ -118,6 +124,85 @@ if(QCPERF_OS_WINDOWS)
     message(STATUS "Windows platform configuration loaded")
 endif()
 
+# ============================================================================
+# Backend Selection
+# ============================================================================
+# Determine which backends are supported on the current platform.
+# For each OS-specific backend, QCPERF_BACKEND_OS_PREFIX_<NAME> is set to the
+# OS qualifier (e.g. QCOM_LINUX, WOS) so the compile definition becomes
+# QCPERF_ENABLED_<OS>_<NAME>. DUMMY has no OS prefix and remains QCPERF_ENABLED_DUMMY.
+set(QCPERF_PLATFORM_SUPPORTED_BACKENDS "DUMMY")
+
+if(QCPERF_PLATFORM_LINUX_ARM64)
+    set(_OS_PREFIX "QCOM_LINUX")
+    foreach(_BACKEND CPU NPU)
+        list(APPEND QCPERF_PLATFORM_SUPPORTED_BACKENDS ${_BACKEND})
+        set(QCPERF_BACKEND_OS_PREFIX_${_BACKEND} ${_OS_PREFIX})
+    endforeach()
+endif()
+
+if(QCPERF_PLATFORM_WINDOWS_ARM64)
+    set(_OS_PREFIX "WOS")
+    foreach(_BACKEND THERMAL POWER)
+        list(APPEND QCPERF_PLATFORM_SUPPORTED_BACKENDS ${_BACKEND})
+        set(QCPERF_BACKEND_OS_PREFIX_${_BACKEND} ${_OS_PREFIX})
+    endforeach()
+endif()
+
+# If empty (default), all platform-supported backends are enabled.
+set(BACKENDS "" CACHE STRING
+    "Semicolon-separated list of backends to enable (e.g. \"DUMMY;CPU;NPU\"). \
+If empty, all platform-supported backends are enabled.")
+
+if(BACKENDS)
+    # User specified an explicit list — enable only those supported on this platform
+    foreach(_BACKEND_INPUT ${BACKENDS})
+        string(TOUPPER "${_BACKEND_INPUT}" _BACKEND)
+        if(${_BACKEND} IN_LIST QCPERF_PLATFORM_SUPPORTED_BACKENDS)
+            if(DEFINED QCPERF_BACKEND_OS_PREFIX_${_BACKEND})
+                set(_OS_PREFIX ${QCPERF_BACKEND_OS_PREFIX_${_BACKEND}})
+                set(QCPERF_ENABLED_${_OS_PREFIX}_${_BACKEND} ON)
+                message(STATUS "Backend enabled (user selection): ${_OS_PREFIX}_${_BACKEND}")
+            else()
+                set(QCPERF_ENABLED_${_BACKEND} ON)
+                message(STATUS "Backend enabled (user selection): ${_BACKEND}")
+            endif()
+        else()
+            message(WARNING "Backend '${_BACKEND}' is not supported on this platform — skipping.")
+        endif()
+    endforeach()
+else()
+    # Default: enable all platform-supported backends
+    foreach(_BACKEND ${QCPERF_PLATFORM_SUPPORTED_BACKENDS})
+        if(DEFINED QCPERF_BACKEND_OS_PREFIX_${_BACKEND})
+            set(_OS_PREFIX ${QCPERF_BACKEND_OS_PREFIX_${_BACKEND}})
+            set(QCPERF_ENABLED_${_OS_PREFIX}_${_BACKEND} ON)
+            message(STATUS "Backend enabled (platform default): ${_OS_PREFIX}_${_BACKEND}")
+        else()
+            set(QCPERF_ENABLED_${_BACKEND} ON)
+            message(STATUS "Backend enabled (platform default): ${_BACKEND}")
+        endif()
+    endforeach()
+endif()
+
+# Propagate enabled backends as compile definitions for use in source code.
+# This loop is automatic — no changes needed here when adding a new backend;
+# just add the backend name to the appropriate platform section above.
+foreach(_BACKEND ${QCPERF_PLATFORM_SUPPORTED_BACKENDS})
+    if(DEFINED QCPERF_BACKEND_OS_PREFIX_${_BACKEND})
+        set(_OS_PREFIX ${QCPERF_BACKEND_OS_PREFIX_${_BACKEND}})
+        set(_COMPILE_FLAG QCPERF_ENABLED_${_OS_PREFIX}_${_BACKEND})
+    else()
+        set(_COMPILE_FLAG QCPERF_ENABLED_${_BACKEND})
+    endif()
+    if(${_COMPILE_FLAG})
+        add_compile_definitions(${_COMPILE_FLAG})
+    endif()
+endforeach()
+
+message(STATUS "")
+message(STATUS "Enabled backends: ${QCPERF_PLATFORM_SUPPORTED_BACKENDS}")
+
 # Linux-specific configurations
 if(QCPERF_OS_LINUX)
     # Enable Linux-specific definitions
@@ -162,6 +247,16 @@ if(QCPERF_OS_LINUX)
             add_compile_options(-march=armv8-a)
         endif()
     endif()
+
+    if(QCPERF_PLATFORM_LINUX_X86_64)
+        message(STATUS "Configuring for Linux x86_64")
+
+        # Add x86_64-specific compile definitions if needed
+        add_compile_definitions(LINUX_X86_64)
+    endif()
+
+    set(_OS_M "m")
+    set(_OS_THREAD "pthread")
 
     message(STATUS "Linux platform configuration loaded")
 endif()
@@ -258,9 +353,23 @@ message(STATUS "Compiler configuration loaded")
 # This ensures consistent type definitions across different platforms
 # and compiler implementations.
 
-# Check for stdbool.h and include it if available
-include(CheckIncludeFile)
-CHECK_INCLUDE_FILE(stdbool.h HAVE_STDBOOL_H)
+# When cross-compiling, skip host-based header probes and assume standard
+# C11 headers are present in the cross-toolchain (ARM GNU Toolchain ships
+# all standard headers). When building natively, probe the host compiler.
+if(NOT CMAKE_CROSSCOMPILING)
+    include(CheckIncludeFile)
+    CHECK_INCLUDE_FILE(stdbool.h  HAVE_STDBOOL_H)
+    CHECK_INCLUDE_FILE(stdint.h   HAVE_STDINT_H)
+    CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
+    CHECK_INCLUDE_FILE(stddef.h   HAVE_STDDEF_H)
+else()
+    # Cross-compiling: ARM GNU Toolchain ships all standard C11 headers
+    message(STATUS "Cross-compiling: skipping host header checks, assuming standard C11 headers present")
+    set(HAVE_STDBOOL_H  TRUE)
+    set(HAVE_STDINT_H   TRUE)
+    set(HAVE_INTTYPES_H TRUE)
+    set(HAVE_STDDEF_H   TRUE)
+endif()
 
 if(HAVE_STDBOOL_H)
     add_compile_definitions(HAVE_STDBOOL_H)
@@ -272,11 +381,6 @@ else()
         false=0
     )
 endif()
-
-# Check for other standard headers
-CHECK_INCLUDE_FILE(stdint.h HAVE_STDINT_H)
-CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
-CHECK_INCLUDE_FILE(stddef.h HAVE_STDDEF_H)
 
 # Add appropriate definitions based on available headers
 if(HAVE_STDINT_H)

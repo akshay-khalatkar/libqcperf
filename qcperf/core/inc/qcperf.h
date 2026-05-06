@@ -43,6 +43,25 @@
 #include "qcperf_common.h"
 #include "version_info.h"
 
+#ifdef __cplusplus
+#define QCPERF_EXTERN_C extern "C"
+#else
+#define QCPERF_EXTERN_C
+#endif
+
+#if defined(QCPERF_STATIC_LIBRARY)
+# define QCPERF_EXPORT QCPERF_EXTERN_C
+#else
+# if defined(_WIN32)
+#  if defined(QCPERF_SHARED_LIBRARY)
+#   define QCPERF_EXPORT QCPERF_EXTERN_C __declspec(dllexport)
+#  else
+#   define QCPERF_EXPORT QCPERF_EXTERN_C __declspec(dllimport)
+#  endif
+# else
+#  define QCPERF_EXPORT QCPERF_EXTERN_C __attribute__((visibility ("default")))
+# endif
+#endif
 
 /**
  * @brief Initialize the QCPerf library
@@ -57,7 +76,7 @@
  * @note This function should only be called once during the application lifecycle
  * @see qcperf_deinit()
  */
-enum QcPerfReturnCode qcperf_init(void);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_init(void);
 
 /**
  * @brief Get the version information of the QCPerf library
@@ -72,7 +91,7 @@ enum QcPerfReturnCode qcperf_init(void);
  *
  * @see struct QcPerfVersionInfo
  */
-enum QcPerfReturnCode qcperf_version(struct QcPerfVersionInfo* version_info);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_version(struct QcPerfVersionInfo* version_info);
 
 /**
  * @brief Connect to a specific performance monitoring backend
@@ -92,7 +111,7 @@ enum QcPerfReturnCode qcperf_version(struct QcPerfVersionInfo* version_info);
  * @note The backend must be disconnected using qcperf_disconnect_backend() when no longer needed
  * @see qcperf_disconnect_backend()
  */
-enum QcPerfReturnCode qcperf_connect_backend(enum QcPerfBackendId backend_id, QcPerfMessageCallback message_callback);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_connect_backend(enum QcPerfBackendId backend_id, QcPerfMessageCallback message_callback);
 
 /**
  * @brief Get capabilities information from a connected backend
@@ -113,7 +132,7 @@ enum QcPerfReturnCode qcperf_connect_backend(enum QcPerfBackendId backend_id, Qc
  * @note The backend must be connected before calling this function
  * @see qcperf_connect_backend(), struct QcPerfBackendInfo
  */
-enum QcPerfReturnCode qcperf_get_capabilities_info(enum QcPerfBackendId backend_id, struct QcPerfBackendInfo* backend_info);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_get_capabilities_info(enum QcPerfBackendId backend_id, struct QcPerfBackendInfo* backend_info);
 
 /**
  * @brief Set the result callback for a connected backend
@@ -136,7 +155,7 @@ enum QcPerfReturnCode qcperf_get_capabilities_info(enum QcPerfBackendId backend_
  * @note This callback must be set before starting performance monitoring
  * @see qcperf_start(), QcPerfDataCallback, struct QcPerfData
  */
-enum QcPerfReturnCode qcperf_set_data_callback(enum QcPerfBackendId backend_id, QcPerfDataCallback data_callback);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_set_data_callback(enum QcPerfBackendId backend_id, QcPerfDataCallback data_callback);
 
 /**
  * @brief Start performance monitoring on a backend
@@ -162,7 +181,7 @@ enum QcPerfReturnCode qcperf_set_data_callback(enum QcPerfBackendId backend_id, 
  * @note Use qcperf_stop() to stop the monitoring session
  * @see qcperf_stop(), qcperf_set_data_callback(), struct QcPerfRequest
  */
-enum QcPerfReturnCode qcperf_start(enum QcPerfBackendId backend_id, struct QcPerfRequest* request);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_start(enum QcPerfBackendId backend_id, struct QcPerfRequest* request);
 
 /**
  * @brief Stop performance monitoring on a backend
@@ -182,7 +201,7 @@ enum QcPerfReturnCode qcperf_start(enum QcPerfBackendId backend_id, struct QcPer
  * @note This function should be called for each active monitoring session started with qcperf_start()
  * @see qcperf_start(), struct QcPerfRequest
  */
-enum QcPerfReturnCode qcperf_stop(enum QcPerfBackendId backend_id, struct QcPerfRequest* request);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_stop(enum QcPerfBackendId backend_id, struct QcPerfRequest* request);
 
 /**
  * @brief Disconnect from a backend
@@ -200,7 +219,7 @@ enum QcPerfReturnCode qcperf_stop(enum QcPerfBackendId backend_id, struct QcPerf
  * @note All monitoring sessions should be stopped before disconnecting
  * @see qcperf_connect_backend(), qcperf_stop()
  */
-enum QcPerfReturnCode qcperf_disconnect_backend(enum QcPerfBackendId backend_id);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_disconnect_backend(enum QcPerfBackendId backend_id);
 
 /**
  * @brief Deinitialize the QCPerf library
@@ -216,7 +235,7 @@ enum QcPerfReturnCode qcperf_disconnect_backend(enum QcPerfBackendId backend_id)
  * @note After calling this function, qcperf_init() must be called again to use the library
  * @see qcperf_init(), qcperf_disconnect_backend()
  */
-enum QcPerfReturnCode qcperf_deinit(void);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_deinit(void);
 
 /**
  * @brief Get detailed information about an error code
@@ -236,6 +255,6 @@ enum QcPerfReturnCode qcperf_deinit(void);
  * @note This function can be called even if the library is not initialized
  * @see enum QcPerfReturnCode, struct QcPerfReturnCodeInfo
  */
-enum QcPerfReturnCode qcperf_get_error_info(enum QcPerfReturnCode error_code, struct QcPerfReturnCodeInfo* error_info);
+QCPERF_EXPORT enum QcPerfReturnCode qcperf_get_error_info(enum QcPerfReturnCode error_code, struct QcPerfReturnCodeInfo* error_info);
 
 #endif  // QC_PERF_H

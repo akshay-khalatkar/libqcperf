@@ -41,7 +41,7 @@
  * ReleaseMutex, and CloseHandle to provide the functionality required by the qmutex interface.
  */
 
-#include "qmutex.h"
+#include "QMutex.h"
 #include <Windows.h>
 
 enum QMutexReturnCode mutex_create(const struct MutexAttributes* mutex_request, struct MutexInfo* mutex_info) {

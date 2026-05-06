@@ -56,14 +56,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "qcperf.h"
+#include "qcperf_common.h"
+
 #ifdef _WIN32
 #include <windows.h>  // This includes winnt.h internally
 #else
 #include <unistd.h>
 #endif
 
-#include "qcperf.h"
-#include "qcperf_common.h"
+#if defined(QCPERF_ENABLED_QCOM_LINUX_NPU)
+// For DSP NPU backend - include remote.h and define function pointers
+#include "remote.h"
+
+// Define function pointers for remote operations that will be used by sysmonquery_stub
+int (*local_remote_handle64_open)(const char* name, remote_handle64* ph) = remote_handle64_open;
+int (*local_remote_handle64_close)(remote_handle64 h) = remote_handle64_close;
+int (*local_remote_handle64_invoke)(remote_handle64 h, uint32_t sc, remote_arg* pra) = remote_handle64_invoke;
+#endif
 
 /**
  * @def RETURN_SUCCESS
@@ -449,7 +459,7 @@ static void cleanup_backend_info(void) {
         g_backend_info->capabilities_list = NULL;
     }
 
-    free(g_backend_info);
+    free((void*)g_backend_info);
     g_backend_info = NULL;
 }
 
@@ -471,7 +481,7 @@ static enum QcPerfReturnCode test_capability(enum QcPerfBackendId test_backend, 
         printf("\n========================================================================\n");
         printf("[TEST] Testing capability ID: %d", capability_info->capability_id);
 
-        if (g_is_verbose_print && NULL != capability_info->capability_name) {
+        if (g_is_verbose_print) {
             printf(" (%s)", capability_info->capability_name);
         }
         printf("\n");
@@ -580,15 +590,31 @@ int main(int argc, char** argv) {
             // Get backend name based on backend ID
             const char* backend_name = "unknown";
             switch (test_backend) {
+#if defined(QCPERF_ENABLED_DUMMY)
             case QC_PERF_BACKEND_DUMMY:
                 backend_name = "dummy";
                 break;
+#endif
+#if defined(QCPERF_ENABLED_QCOM_LINUX_CPU)
+            case QC_PERF_BACKEND_QCOM_LINUX_CPU:
+                backend_name = "cpu";
+                break;
+#endif
+#if defined(QCPERF_ENABLED_QCOM_LINUX_NPU)
+            case QC_PERF_BACKEND_DSP_NPU:
+                backend_name = "npu";
+                break;
+#endif
+#if defined(QCPERF_ENABLED_WOS_POWER)
             case QC_PERF_BACKEND_POWER:
                 backend_name = "power";
                 break;
+#endif
+#if defined(QCPERF_ENABLED_WOS_THERMAL)
             case QC_PERF_BACKEND_THERMAL:
                 backend_name = "thermal";
                 break;
+#endif
             default:
                 backend_name = "unknown";
                 break;

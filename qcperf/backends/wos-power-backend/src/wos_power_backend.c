@@ -49,7 +49,7 @@
 #endif
 
 #include "power_telemetry.h"
-#include "qthread.h"
+#include "QThread.h"
 #include "qtime.h"
 #include "wos_power_backend.h"
 #include "wos_power_backend_logger.h"
